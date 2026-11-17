@@ -11,4 +11,5 @@ if __name__ == "__main__":
     opcoes = parser.parse_args()
     host = "0.0.0.0" if opcoes.rede else "127.0.0.1"
     print(f"Batalha Conecta: http://127.0.0.1:{opcoes.porta}", flush=True)
-    serve(app, host=host, port=opcoes.porta, max_request_body_size=20 * 1024 * 1024)
+    # Várias linhas de atendimento: vários celulares podem falar ao mesmo tempo.
+    serve(app, host=host, port=opcoes.porta, threads=16, max_request_body_size=20 * 1024 * 1024)

@@ -37,7 +37,7 @@ O toque inicial e a permissão do navegador são necessários. Depois deles, o f
 | Bairro ou comunidade | “Centro” |
 | WhatsApp com DDD | “Pular”, para testar sem divulgar nenhum contato |
 
-Após cada resposta, o assistente diz **“Entendi… Está certo?”**. A pessoa responde **“sim”** ou **“repetir”**. A atividade também pode ser escolhida por figura.
+Com o assistente de IA ativo, após cada resposta o aplicativo diz **“Anotei…”** e já faz a próxima pergunta; para corrigir, a pessoa diz **“não”** logo em seguida. Sem a IA, o assistente diz **“Entendi… Está certo?”** e a pessoa responde **“sim”** ou **“repetir”**. Nos dois casos, tudo é lido de novo antes de publicar. A atividade também pode ser escolhida por figura.
 
 As atividades são **Bolos e comidas**, **Artesanato**, **Farinha e derivados**, **Serviços de manutenção** e **Outros serviços**. Dizer “pedreiro” seleciona manutenção. Outros serviços recebe atividades que não se encaixam nas demais; a foto de barbearia é só um exemplo. “Trabalho rural” deixou de ser uma opção ampla: o assistente pede uma atividade específica.
 

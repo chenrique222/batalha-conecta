@@ -24,7 +24,7 @@ async function ambiente({voz=true, modo='icones'}={}) {
     cancel(){ clearTimeout(situacao.timer); this.speaking=false; },
     speak(frase){ this.speaking=true; situacao.falas.push(frase.text); situacao.timer=setTimeout(()=>{this.speaking=false; frase.onend?.();},1); }};
   const setReal=w.setTimeout.bind(w);
-  w.setTimeout=(fn,tempo)=>setReal(fn,tempo===450?1:tempo);
+  w.setTimeout=(fn,tempo)=>setReal(fn,tempo===150?1:tempo);
   class MicrofoneFalso {
     start(){situacao.atual=this; this.onstart?.();}
     stop(){if(situacao.atual===this)situacao.atual=null;setTimeout(()=>this.onend?.(),0);}

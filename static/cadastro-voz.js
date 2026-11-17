@@ -1,5 +1,7 @@
-/* Assistente com perguntas fixas: não inventa informações e não é um chatbot.
-   O navegador transcreve; o Python valida e salva o mesmo cadastro de antes. */
+/* Conversa do cadastro por voz. As perguntas são fixas e nada é publicado sem
+   a pessoa ouvir e confirmar. Com o assistente de IA ativo (ia.py), a gravação
+   é transformada em texto no servidor e a IA ajuda a entender a resposta.
+   Sem a IA, ou se ela falhar, o navegador transcreve e valem as regras fixas. */
 "use strict";
 (function () {
   const painel = document.querySelector("#cadastro-voz");
@@ -16,8 +18,52 @@
   const indisponivel = document.querySelector("#voz-indisponivel");
   const marcadores = [...document.querySelectorAll("[data-corrigir]")];
   const Reconhecimento = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const disponivel = Boolean(Reconhecimento && vozDisponivel() && window.isSecureContext);
-  const aviso = "Este cadastro transforma sua fala em texto. O navegador pode enviar sua voz ao serviço de reconhecimento pela internet. Você vai ouvir e conferir cada resposta. O perfil só será publicado quando você autorizar. Para pausar, toque no microfone novamente ou diga pausar. Para cancelar, diga cancelar cadastro.";
+  // O servidor avisa se há chave de IA; o navegador precisa conseguir gravar.
+  const iaAtiva = painel.dataset.ia === "1";
+  const iaEscuta = iaAtiva && Boolean(window.EscutaIA && window.EscutaIA.suportada(window));
+  const disponivel = Boolean((Reconhecimento || iaEscuta) && vozDisponivel() && window.isSecureContext);
+  // Depois de uma falha, a IA descansa um minuto e a conversa segue sem ela.
+  const DESCANSO_IA = 60000;
+  let escutaIAPausadaAte = 0;
+  let entenderPausadoAte = 0;
+  // Aviso falado curto: o texto completo continua na tela.
+  const avisoEscuta = iaEscuta
+    ? "Sua voz vai para um serviço de inteligência artificial pela internet e não fica guardada aqui."
+    : "O navegador pode enviar sua voz a um serviço de reconhecimento pela internet.";
+  const comoTerminar = iaEscuta
+    ? "Quando terminar, fique em silêncio um instante."
+    : "Ao acabar, diga terminei ou toque na marca de confirmação.";
+  const aviso = avisoEscuta + " Nada é publicado sem você autorizar.";
+  const introducao = () => `Vamos lá! ${aviso} Fale depois do sinal. ${comoTerminar} ${logica.etapas[0].pergunta}`;
+  /* Pede a voz natural das perguntas antes da hora, para a conversa não ter esperas. */
+  function prepararConversa() {
+    if (typeof prepararFalas !== "function") return;
+    prepararFalas([introducao(), ...logica.etapas.map(item => item.pergunta),
+      "Para confirmar essa resposta, diga sim. Para mudar, diga repetir.",
+      "Para autorizar a divulgação, diga publicar. Você também pode dizer corrigir nome, atividade, descrição, comunidade ou telefone. Para sair, diga cancelar cadastro.",
+      "Conversa pausada. Toque no microfone para continuar.",
+      "Está certo? Diga sim ou repetir.", NAO_OUVI],
+      logica.etapas.slice(1).map(item => `Se estiver errado, diga não. ${item.pergunta}`));
+  }
+  const NAO_OUVI = "Não ouvi sua resposta. Pode falar agora, depois do sinal.";
+  let tentativasSemFala = 0;
+  /* O microfone abre uma vez por conversa. Abrir a cada pergunta perdia o começo da fala. */
+  let fluxoConversa = null;
+  let pedidoMicrofone = null;
+  function microfoneConversa() {
+    if (fluxoConversa && fluxoConversa.getTracks().every(faixa => faixa.readyState !== "ended")) return Promise.resolve(fluxoConversa);
+    pedidoMicrofone ||= window.EscutaIA.abrirMicrofone().then(fluxo => {
+      pedidoMicrofone = null;
+      if (!ativo) { window.EscutaIA.soltar(fluxo); throw Object.assign(new Error("Conversa pausada"), {name:"AbortError"}); }
+      fluxoConversa = fluxo;
+      return fluxo;
+    }, falhaMicrofone => { pedidoMicrofone = null; throw falhaMicrofone; });
+    return pedidoMicrofone;
+  }
+  function soltarMicrofone() {
+    if (fluxoConversa) window.EscutaIA.soltar(fluxoConversa);
+    fluxoConversa = null;
+  }
   let valores = {};
   let etapa = 0;
   let fase = "inicio";
@@ -29,6 +75,8 @@
   let rascunhoEscuta = "";
   const terminarResposta = document.querySelector("#voz-terminar");
   let corrigindoResumo = false;
+  // Com a IA, cada resposta é repetida e a conversa segue. `anotado` guarda a última, para "não, está errado" voltar.
+  let anotado = null;
   let enviando = false;
   let contextoSom = null;
   let manualAlterado = false;
@@ -48,6 +96,7 @@
     ativo = false;
     geracao += 1;
     pararEscuta();
+    soltarMicrofone();
     pararVoz();
     atualizar();
   }
@@ -111,7 +160,7 @@
     atualizar();
     falar(mensagem, repetir, () => {
       if (atual !== geracao || !ativo || !ouvirDepois || enviando) return;
-      timer = setTimeout(() => escutar(atual), 450);
+      timer = setTimeout(() => escutar(atual), 150);
     }, () => {
       if (atual !== geracao) return;
       pausar();
@@ -128,15 +177,37 @@
   function escutar(atual) {
     if (atual !== geracao || !ativo || enviando) return;
     const campo = logica.etapas[etapa].campo;
-    escutaPaciente = new EscutaPaciente({
+    const faseOuvida = fase;
+    const comIA = iaEscuta && Date.now() >= escutaIAPausadaAte;
+    if (!comIA && !Reconhecimento) {
+      falha("O assistente de inteligência artificial não respondeu. Confira a internet e toque no microfone para tentar novamente, ou preencha com ajuda.");
+      return;
+    }
+    const Escuta = comIA ? window.EscutaIA : EscutaPaciente;
+    escutaPaciente = new Escuta({
       Reconhecimento,
       rascunho:rascunhoEscuta,
-      pausa:fase === "resposta" ? (campo === "telefone" ? 10000 : 6000) : 2500,
+      // Silêncio que encerra a resposta. Com a IA, o fim é automático; sem ela, a pessoa diz "terminei".
+      pausa:!comIA ? (fase === "resposta" ? (campo === "telefone" ? 10000 : 6000) : 2500)
+        : fase === "resposta" ? ({telefone:3500, descricao:3000}[campo] || 2000) : 1500,
+      ...(comIA ? {abrirMicrofone:microfoneConversa, compartilhado:true} : {}),
+      // Só a escuta com IA usa as quatro opções abaixo.
+      contexto:contextoSom && contextoSom.state === "running" ? contextoSom : undefined,
+      transcrever:(audio, sinalDeCancelamento) => transcrever(audio, sinalDeCancelamento, campo, faseOuvida),
+      onFala() {
+        if (atual === geracao) status.textContent = "Estou ouvindo você…";
+      },
+      onProcessando() {
+        if (atual !== geracao) return;
+        terminarResposta.hidden = true;
+        painel.classList.remove("escutando");
+        status.textContent = "Entendendo sua resposta…";
+      },
       onInicio(primeira) {
         if (atual !== geracao) return;
         painel.classList.add("escutando");
         terminarResposta.hidden = false;
-        status.textContent = "Estou ouvindo. Fale no seu ritmo. Diga terminei ou use a marca de confirmação ao acabar.";
+        status.textContent = comIA ? `Estou ouvindo. Fale no seu ritmo. ${comoTerminar}` : "Estou ouvindo. Fale no seu ritmo. Diga terminei ou use a marca de confirmação ao acabar.";
         if (primeira) sinal();
       },
       onParcial(texto) {
@@ -146,6 +217,7 @@
       },
       onFinal(texto) {
         if (atual !== geracao) return;
+        tentativasSemFala = 0;
         escutaPaciente = null;
         rascunhoEscuta = "";
         terminarResposta.hidden = true;
@@ -156,6 +228,28 @@
         if (atual !== geracao) return;
         escutaPaciente = null;
         rascunhoEscuta = texto;
+        terminarResposta.hidden = true;
+        painel.classList.remove("escutando");
+        if (tipo === "ia-indisponivel") {
+          // Por um minuto quem ouve é o navegador, que abre o próprio microfone.
+          soltarMicrofone();
+          if (!Reconhecimento) {
+            falha("O assistente de inteligência artificial não respondeu. Confira a internet e toque no microfone para tentar novamente, ou preencha com ajuda.");
+            return;
+          }
+          // A conversa não para: por um minuto, quem transcreve é o navegador.
+          escutaIAPausadaAte = Date.now() + DESCANSO_IA;
+          dizer(`O assistente de inteligência artificial não respondeu. Vou continuar com o reconhecimento do navegador. ${mensagemAtual()}`, true, true);
+          return;
+        }
+        if (tipo === "no-speech" && comIA && !texto && tentativasSemFala < 1) {
+          // Antes de pausar, pergunta de novo uma vez: muita gente demora a começar.
+          tentativasSemFala += 1;
+          dizer(NAO_OUVI);
+          return;
+        }
+        tentativasSemFala = 0;
+        if (tipo !== "no-speech") soltarMicrofone();
         const mensagens = {
           "not-allowed":"O microfone foi bloqueado. Permita o microfone nas configurações do navegador.",
           "service-not-allowed":"O serviço de reconhecimento não ficou disponível neste navegador.",
@@ -169,8 +263,85 @@
     escutaPaciente.iniciar();
   }
   terminarResposta.addEventListener("click", () => escutaPaciente?.finalizar());
+  /* ----- Assistente de IA: ouvir (transcrever) e entender ----- */
+  function comPrazo(pedido, controlador, prazo) {
+    const relogio = setTimeout(() => controlador.abort(), prazo);
+    return pedido.finally(() => clearTimeout(relogio));
+  }
+  async function transcrever(audio, sinalDeCancelamento, campo, faseOuvida) {
+    const controlador = new AbortController();
+    sinalDeCancelamento?.addEventListener("abort", () => controlador.abort());
+    const extensao = audio.type.includes("mp4") ? "m4a" : audio.type.includes("ogg") ? "ogg" : "webm";
+    const dados = new FormData();
+    dados.set("audio", audio, `resposta.${extensao}`);
+    dados.set("campo", campo);
+    dados.set("fase", faseOuvida);
+    dados.set("csrf", form.elements.csrf.value);
+    const resposta = await comPrazo(fetch("/api/ia/transcrever", {method:"POST", body:dados, headers:{Accept:"application/json"}, signal:controlador.signal}), controlador, 25000);
+    const resultado = await resposta.json();
+    if (!resposta.ok) throw new Error("Assistente de IA indisponível");
+    return resultado.texto || "";
+  }
+  async function entender(texto) {
+    const controlador = new AbortController();
+    const dados = new FormData();
+    dados.set("texto", texto);
+    dados.set("fase", fase);
+    dados.set("campo", logica.etapas[etapa].campo);
+    dados.set("pendente", fase === "confirmacao" ? logica.lerValor(logica.etapas[etapa].campo, pendente) : "");
+    dados.set("csrf", form.elements.csrf.value);
+    const resposta = await comPrazo(fetch("/api/ia/entender", {method:"POST", body:dados, headers:{Accept:"application/json"}, signal:controlador.signal}), controlador, 12000);
+    const resultado = await resposta.json();
+    if (!resposta.ok || !resultado.intencao) throw new Error("Assistente de IA indisponível");
+    return resultado;
+  }
+  function orientacao() {
+    if (fase === "confirmacao") return "Para confirmar essa resposta, diga sim. Para mudar, diga repetir.";
+    if (fase === "revisao") return "Para autorizar a divulgação, diga publicar. Você também pode dizer corrigir nome, atividade, descrição, comunidade ou telefone. Para sair, diga cancelar cadastro.";
+    return logica.validar(logica.etapas[etapa].campo, "").erro;
+  }
+  /* A IA sugere; o aplicativo confere de novo e sempre lê a resposta para a pessoa confirmar. */
+  function aplicar(resultado) {
+    const campo = logica.etapas[etapa].campo;
+    const intencao = resultado.intencao;
+    if (intencao === "cancelar") { cancelar(); return; }
+    if (intencao === "pausar") { pausar(); status.textContent = "Conversa pausada. Toque no microfone para continuar."; falar(status.textContent, repetir); return; }
+    if (intencao === "repetir") { dizer(mensagemAtual()); return; }
+    if (intencao === "sim" && fase === "confirmacao") { confirmar(); return; }
+    if (intencao === "nao" && fase === "confirmacao") { fase = "resposta"; dizer(mensagemAtual()); return; }
+    if (intencao === "publicar" && fase === "revisao") { publicar(); return; }
+    if (intencao === "corrigir" && fase === "revisao") {
+      const indice = logica.etapas.findIndex(item => item.campo === resultado.campo);
+      if (indice >= 0) { editar(indice); return; }
+    }
+    if (intencao === "pular" && campo === "telefone" && fase !== "revisao") { anotar(""); return; }
+    if (intencao === "responder" && fase !== "revisao" && typeof resultado.valor === "string") {
+      let conferido;
+      if (campo === "categoria") conferido = logica.categorias[resultado.valor] ? {valor:resultado.valor} : {erro:true};
+      else if (campo === "telefone") conferido = /^[1-9]\d{9,10}$/.test(resultado.valor) ? {valor:resultado.valor} : {erro:true};
+      else conferido = logica.validar(campo, resultado.valor);
+      if (!conferido.erro) { anotar(conferido.valor); return; }
+    }
+    // Dúvida: a IA pode explicar com as próprias palavras; senão, vale a orientação fixa.
+    dizer(typeof resultado.fala === "string" && resultado.fala.trim() ? resultado.fala.trim().slice(0, 240) : orientacao());
+  }
   function receber(texto) {
     if (enviando) return;
+    if (voltarSePedir(texto)) return;
+    const usarIA = iaAtiva && Date.now() >= entenderPausadoAte && !logica.clara(fase, logica.etapas[etapa].campo, texto);
+    if (!usarIA) { receberPelasRegras(texto); return; }
+    const atual = geracao;
+    const vigente = () => atual === geracao && ativo && !enviando;
+    status.textContent = "Entendendo sua resposta…";
+    entender(texto).then(resultado => {
+      if (vigente()) aplicar(resultado);
+    }, () => {
+      if (!vigente()) return;
+      entenderPausadoAte = Date.now() + DESCANSO_IA;
+      receberPelasRegras(texto);
+    });
+  }
+  function receberPelasRegras(texto) {
     const comando = logica.limpar(texto);
     if (comando === "cancelar cadastro") { cancelar(); return; }
     if (comando === "pausar") { pausar(); status.textContent = "Conversa pausada. Toque no microfone para continuar."; falar(status.textContent, repetir); return; }
@@ -190,9 +361,37 @@
     }
     const resultado = logica.validar(logica.etapas[etapa].campo, texto);
     if (resultado.erro) { dizer(resultado.erro); return; }
+    if (iaAtiva) { anotar(resultado.valor); return; }
     pendente = resultado.valor;
     fase = "confirmacao";
     dizer(mensagemAtual());
+  }
+  /* Confirmação rápida (com a IA): repete o que anotou e já faz a próxima pergunta.
+     Tudo é lido de novo na revisão final, antes de publicar. */
+  function anotar(valor) {
+    const campo = logica.etapas[etapa].campo;
+    valores[campo] = valor;
+    form.elements[campo].value = valor;
+    anotado = etapa;
+    const lido = campo === "telefone" && !valor ? "Sem telefone." : `Anotei: ${logica.lerValor(campo, valor)}.`;
+    if (corrigindoResumo || etapa === logica.etapas.length - 1) {
+      fase = "revisao";
+      corrigindoResumo = false;
+    } else { etapa += 1; fase = "resposta"; }
+    dizer(`${lido} ${fase === "resposta" ? "Se estiver errado, diga não. " : ""}${mensagemAtual()}`);
+  }
+  /* "Não", "está errado" ou "voltar" logo depois de uma anotação: refaz a pergunta anterior. */
+  function voltarSePedir(texto) {
+    if (anotado === null || fase !== "resposta") return false;
+    const normal = logica.limpar(texto);
+    // Frases curtas de recusa: "não", "não, tá errado", "voltar". "Não tenho" (sem telefone) não conta.
+    const recusa = /^(nao|errado|ta errado|esta errado|voltar|volta|corrigir)\b/.test(normal) && normal.split(" ").length <= 4 && !/\b(tenho|quero|sei|uso)\b/.test(normal);
+    if (!recusa) return false;
+    etapa = anotado;
+    anotado = null;
+    fase = "resposta";
+    dizer(`Tudo bem, vamos corrigir. ${mensagemAtual()}`);
+    return true;
   }
   function confirmar() {
     const campo = logica.etapas[etapa].campo;
@@ -207,6 +406,7 @@
   function editar(indice) {
     if (enviando) return;
     corrigindoResumo = logica.etapas.every(item => item.campo in valores);
+    anotado = null;
     etapa = indice;
     fase = "resposta";
     ativo = true;
@@ -220,6 +420,7 @@
     window.galeriaCadastro?.limpar();
     rascunhoEscuta = "";
     pendente = "";
+    anotado = null;
     etapa = 0;
     fase = "inicio";
     corrigindoResumo = false;
@@ -301,7 +502,8 @@
     prepararSinal();
     ativo = true;
     indisponivel.hidden = true;
-    if (fase === "inicio") { fase = "resposta"; dizer(`${aviso} Fale depois do sinal. Você pode fazer pausas. Ao acabar, diga terminei ou toque na marca de confirmação. ${mensagemAtual()}`); }
+    prepararConversa();
+    if (fase === "inicio") { fase = "resposta"; dizer(etapa === 0 ? introducao() : `${aviso} Fale depois do sinal. ${comoTerminar} ${mensagemAtual()}`); }
     else dizer(rascunhoEscuta ? `Já ouvi: ${rascunhoEscuta}. Pode continuar depois do sinal. Ao acabar, diga terminei.` : mensagemAtual(), true, true);
   });
   repetir.addEventListener("click", () => {
@@ -313,7 +515,7 @@
   document.querySelector("#voz-nao").addEventListener("click", () => { ativo = true; fase = "resposta"; dizer(mensagemAtual()); });
   botaoPublicar.addEventListener("click", publicar);
   document.querySelector("#voz-cancelar").addEventListener("click", cancelar);
-  document.querySelector("#usar-voz").addEventListener("click", () => { mostrarVoz(true); dizer(mensagemAtual(), false); });
+  document.querySelector("#usar-voz").addEventListener("click", () => { mostrarVoz(true); prepararConversa(); dizer(mensagemAtual(), false); });
   document.querySelector("#usar-formulario").addEventListener("click", () => mostrarVoz(false));
   document.querySelector("#voz-formulario").addEventListener("click", () => { aplicarModo("texto"); mostrarVoz(false); });
   document.querySelector("#voz-ajuda").addEventListener("click", evento => falar("O ditado precisa de um navegador compatível, permissão de microfone e conexão. Você pode tentar Chrome atualizado no computador ou no Android. No celular, o endereço deve usar HTTPS. Para pedir acompanhamento, toque no desenho de livro e preencha com alguém de sua confiança. Nenhum número de telefone é obrigatório.", evento.currentTarget));

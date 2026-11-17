@@ -1,5 +1,5 @@
 /* Guarda apenas a tela de desconexão e seus recursos. Cadastros exigem rede. */
-const CACHE = "batalha-conecta-v6-marca-voz-1";
+const CACHE = "batalha-conecta-v7-paleta-1";
 const RECURSOS = ["/static/offline.html", "/static/estilo.css", "/static/favicon-mapa.svg"];
 self.addEventListener("install", evento => {
   evento.waitUntil(caches.open(CACHE).then(cache => cache.addAll(RECURSOS)).then(() => self.skipWaiting()));

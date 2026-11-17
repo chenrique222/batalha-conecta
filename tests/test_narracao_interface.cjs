@@ -62,7 +62,7 @@ const esvaziar = async () => {for (let i = 0; i < 20; i++) await Promise.resolve
   const a = abrir();
   a.falar('Qual é o nome do seu trabalho?'); await esvaziar();
   assert.equal(a.estado.pedidos.length, 1);
-  await a.avancar(2499); assert.equal(a.estado.falas.length, 0);
+  await a.avancar(4999); assert.equal(a.estado.falas.length, 0);
   await a.avancar(1); assert.equal(a.estado.falas.length, 1);
   assert.ok(a.estado.pedidos[0].args.signal.aborted);
   assert.equal(a.estado.terminou, 0, 'O microfone só deve abrir após terminar a voz alternativa');
@@ -78,7 +78,7 @@ const esvaziar = async () => {for (let i = 0; i < 20; i++) await Promise.resolve
   a.falar('Em qual comunidade?'); await esvaziar();
   assert.equal(a.estado.pedidos.length, 2, 'Após a pausa, a voz online pode ser tentada novamente');
   a.fechar();
-  console.log('OK narração: alternativa após 2,5 s, áudio atrasado ignorado, conclusão única e pausa de 30 s.');
+  console.log('OK narração: alternativa após 5 s, áudio atrasado ignorado, conclusão única e pausa de 30 s.');
 
   const b = abrir();
   b.falar('Primeira pergunta'); await esvaziar();
@@ -103,13 +103,40 @@ const esvaziar = async () => {for (let i = 0; i < 20; i++) await Promise.resolve
     const etapa = pendente(), c = abrir({[parte]:etapa});
     c.falar('Uma orientação'); await esvaziar();
     if (parte === 'decodificacao') await c.responder();
-    await c.avancar(2500);
+    await c.avancar(5000);
     assert.equal(c.estado.falas.length, 1, `${parte} travada também deve usar a alternativa`);
     etapa.resolve({length:100, numberOfChannels:1}); await esvaziar();
     assert.equal(c.estado.fontes.length, 0);
     c.fechar();
   }
   console.log('OK narração: retomada e decodificação demoradas respeitam o mesmo prazo.');
+
+  // Preparo antecipado: as perguntas fixas são pedidas antes, uma de cada vez.
+  const f = abrir();
+  f.w.escolherNarrador('francisca');
+  f.w.prepararFalas(['Pergunta um', 'Pergunta dois', 'Pergunta um']); await esvaziar();
+  assert.equal(f.estado.pedidos.length, 1, 'O preparo pede uma fala de cada vez e não repete');
+  assert.equal(f.estado.pedidos[0].args.body.get('fixa'), '1', 'Falas do aplicativo podem ser guardadas pelo servidor');
+  assert.equal(f.estado.pedidos[0].args.body.get('narrador'), 'francisca');
+  f.falar('Pergunta um'); await esvaziar();
+  assert.equal(f.estado.pedidos.length, 1, 'A fala em preparo é aproveitada, sem novo pedido');
+  await f.responder(0);
+  assert.equal(f.estado.fontes.length, 1); assert.ok(f.estado.fontes[0].iniciou);
+  assert.equal(f.estado.pedidos.length, 2, 'Terminado o primeiro, o preparo segue para a próxima fala');
+  f.estado.fontes[0].onended();
+  f.w.prepararFalas(['Pergunta três']); await esvaziar();
+  f.falar('Pergunta três'); await esvaziar();
+  assert.equal(f.estado.pedidos.length, 3, 'Fala ainda na fila do preparo é pedida na hora');
+  f.falar('Maria das Dores'); await esvaziar();
+  assert.equal(f.estado.pedidos[3].args.body.get('fixa'), null, 'Resposta de uma pessoa nunca é marcada para guardar');
+  f.fechar();
+  // A voz multilíngue (Thalita) foi retirada: ela trocava o sotaque em frases curtas.
+  const g = abrir();
+  assert.equal(g.w.document.querySelector('[data-narrador=thalita]'), null);
+  g.w.escolherNarrador('thalita');
+  assert.notEqual(g.w.localStorage.getItem('batalha-narrador'), 'thalita');
+  g.fechar();
+  console.log('OK narração: preparo antecipado em fila, falas fixas marcadas e só vozes brasileiras.');
 
   const d = abrir();
   d.w.document.querySelector('[data-narrador=antonio]').click(); await esvaziar();
@@ -120,7 +147,7 @@ const esvaziar = async () => {for (let i = 0; i < 20; i++) await Promise.resolve
   assert.equal(d.estado.falas.length, 1); assert.equal(d.estado.pedidos.length, 1);
   d.fechar();
   const e = abrir({semVozAparelho:true});
-  e.falar('Orientação indisponível'); await esvaziar(); await e.avancar(2500);
+  e.falar('Orientação indisponível'); await esvaziar(); await e.avancar(5000);
   assert.equal(e.estado.terminou, 0); assert.equal(e.estado.falhou, 1);
   await e.responder(); assert.equal(e.estado.fontes.length, 0);
   e.fechar();

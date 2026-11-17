@@ -1,0 +1,15 @@
+# Configuração do Render (render.com): coloca o Batalha Conecta no ar a partir do GitHub.
+# A chave da Groq NÃO fica aqui: o Render pede o valor na hora de criar o serviço.
+services:
+  - type: web
+    name: batalha-conecta
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt -r requirements-voz.txt
+    startCommand: python servir.py --rede
+    healthCheckPath: /
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false
+      - key: BATALHA_SECRET_KEY
+        generateValue: true

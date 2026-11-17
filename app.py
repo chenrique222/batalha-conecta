@@ -1,4 +1,4 @@
-"""Batalha Conecta — versão didática 0.6, para testes locais.
+"""Batalha Conecta — versão didática 0.7, para testes locais.
 
 Python recebe pedidos do navegador, consulta o banco e devolve as páginas.
 Leia GUIA_DO_PROFESSOR.md para estudar uma parte de cada vez.
@@ -19,8 +19,11 @@ from PIL import Image, ImageOps, UnidentifiedImageError
 from dados import CATEGORIAS, buscar_envio, buscar_por_id, buscar_profissionais, cadastrar_profissional, preparar_banco
 from dados import buscar_fotos, atualizar_fotos, buscar_avaliacoes, cadastrar_avaliacao, buscar_avaliacao_envio
 from voz import VozNatural, VozIndisponivel, VOZES
+from ia import AgenteIA, IAIndisponivel, CAMPOS, FASES, carregar_env
 
 PASTA = Path(__file__).resolve().parent
+# A chave gratuita do assistente de IA fica no arquivo .env, fora do ZIP e do Git.
+carregar_env(PASTA / ".env")
 Image.MAX_IMAGE_PIXELS = 20_000_000
 
 
@@ -46,25 +49,28 @@ def salvar_foto(arquivo, destino):
         raise ValueError("Não foi possível ler a foto. Escolha uma imagem JPG, PNG ou WebP de até 20 megapixels.")
 
 
+def extensao_audio(conteudo):
+    """Conferimos a assinatura do arquivo; não confiamos apenas na extensão."""
+    if conteudo.startswith(b"RIFF") and conteudo[8:12] == b"WAVE":
+        return ".wav"
+    if conteudo.startswith(b"OggS"):
+        return ".ogg"
+    if conteudo.startswith(b"\x1a\x45\xdf\xa3"):
+        return ".webm"
+    if len(conteudo) > 12 and conteudo[4:8] == b"ftyp":
+        return ".m4a"
+    if conteudo.startswith(b"ID3") or (len(conteudo) > 2 and conteudo[0] == 255 and conteudo[1] & 224 == 224):
+        return ".mp3"
+    raise ValueError("Escolha um áudio MP3, M4A, WAV, OGG ou WebM válido.")
+
+
 def salvar_audio(arquivo, destino):
     if not arquivo or not arquivo.filename:
         return None
     conteudo = arquivo.read(10 * 1024 * 1024 + 1)
     if not conteudo or len(conteudo) > 10 * 1024 * 1024:
         raise ValueError("O áudio precisa ter conteúdo e no máximo 10 MB.")
-    # Conferimos a assinatura do arquivo; não confiamos apenas na extensão.
-    if conteudo.startswith(b"RIFF") and conteudo[8:12] == b"WAVE":
-        extensao = ".wav"
-    elif conteudo.startswith(b"OggS"):
-        extensao = ".ogg"
-    elif conteudo.startswith(b"\x1a\x45\xdf\xa3"):
-        extensao = ".webm"
-    elif len(conteudo) > 12 and conteudo[4:8] == b"ftyp":
-        extensao = ".m4a"
-    elif conteudo.startswith(b"ID3") or (len(conteudo) > 2 and conteudo[0] == 255 and conteudo[1] & 224 == 224):
-        extensao = ".mp3"
-    else:
-        raise ValueError("Escolha um áudio MP3, M4A, WAV, OGG ou WebM válido.")
+    extensao = extensao_audio(conteudo)
     nome = uuid4().hex + extensao
     (destino / nome).write_bytes(conteudo)
     return nome
@@ -97,13 +103,16 @@ def create_app(configuracao=None):
             pass
     app.secret_key = os.environ.get("BATALHA_SECRET_KEY") or chave.read_text().strip()
     preparar_banco(caminho_banco)
-    app.extensions["voz_natural"] = VozNatural()
+    app.extensions["voz_natural"] = VozNatural(pasta_cache=pasta_dados / "voz-cache")
+    # Nos testes, a IA só existe se for simulada: nenhuma chave real é usada.
+    app.extensions["agente_ia"] = AgenteIA(categorias=CATEGORIAS) if app.config.get("TESTING") else AgenteIA.do_ambiente(categorias=CATEGORIAS)
 
     @app.context_processor
     def contexto_comum():
         if "csrf" not in session:
             session["csrf"] = secrets.token_hex(32)
-        return {"categorias": CATEGORIAS, "categorias_por_id": {c["id"]: c for c in CATEGORIAS}, "csrf": session["csrf"]}
+        return {"categorias": CATEGORIAS, "categorias_por_id": {c["id"]: c for c in CATEGORIAS}, "csrf": session["csrf"],
+                "ia_ativa": app.extensions["agente_ia"].ativo}
 
     @app.before_request
     def conferir_formulario():
@@ -140,10 +149,50 @@ def create_app(configuracao=None):
         if narrador not in VOZES:
             return jsonify({"erros": ["Escolha uma das vozes disponíveis."]}), 400
         try:
-            conteudo = app.extensions["voz_natural"].sintetizar(texto, narrador)
+            voz = app.extensions["voz_natural"]
+            # "fixa" marca perguntas e orientações do aplicativo: podem ficar guardadas em disco.
+            conteudo = voz.sintetizar(texto, narrador, guardar=True) if request.form.get("fixa") == "1" else voz.sintetizar(texto, narrador)
         except VozIndisponivel as erro:
             return jsonify({"erros": [str(erro)]}), 503
         return send_file(io.BytesIO(conteudo), mimetype="audio/mpeg", download_name="orientacao.mp3", max_age=0)
+
+    @app.post("/api/ia/transcrever")
+    def ia_transcrever():
+        """OUVIR: recebe a gravação de uma resposta e devolve o texto. O áudio não é guardado."""
+        agente = app.extensions["agente_ia"]
+        if not agente.ativo:
+            return jsonify({"erros": ["O assistente de IA não está configurado."], "motivo": "sem-chave"}), 503
+        campo = request.form.get("campo", "")
+        fase = request.form.get("fase", "")
+        arquivo = request.files.get("audio")
+        conteudo = arquivo.read(4 * 1024 * 1024 + 1) if arquivo else b""
+        if campo not in CAMPOS or fase not in FASES or not 200 <= len(conteudo) <= 4 * 1024 * 1024:
+            return jsonify({"erros": ["Envie uma resposta gravada de até 4 MB."]}), 400
+        try:
+            extensao = extensao_audio(conteudo)
+            texto = agente.transcrever(conteudo, "resposta" + extensao, campo, fase)
+        except ValueError as erro:
+            return jsonify({"erros": [str(erro)]}), 400
+        except IAIndisponivel as erro:
+            return jsonify({"erros": [str(erro)], "motivo": erro.motivo}), 503
+        return jsonify({"texto": texto})
+
+    @app.post("/api/ia/entender")
+    def ia_entender():
+        """ENTENDER: recebe o texto de uma fala e devolve a intenção e o valor conferidos."""
+        agente = app.extensions["agente_ia"]
+        if not agente.ativo:
+            return jsonify({"erros": ["O assistente de IA não está configurado."], "motivo": "sem-chave"}), 503
+        texto = " ".join(request.form.get("texto", "").split())
+        campo = request.form.get("campo", "")
+        fase = request.form.get("fase", "")
+        pendente = request.form.get("pendente", "")[:700]
+        if campo not in CAMPOS or fase not in FASES or not 1 <= len(texto) <= 1000:
+            return jsonify({"erros": ["A fala precisa ter entre 1 e 1000 caracteres."]}), 400
+        try:
+            return jsonify(agente.entender(texto, fase, campo, pendente))
+        except IAIndisponivel as erro:
+            return jsonify({"erros": [str(erro)], "motivo": erro.motivo}), 503
 
     @app.get("/profissionais")
     def profissionais():
@@ -323,7 +372,7 @@ def create_app(configuracao=None):
             return jsonify({"erros": erros}), 400
         return render_template("cadastro.html", campos=campos, erros=erros,
                                envio_id=session["envio_id"], ativo="cadastro",
-                               fala="Você pode cadastrar seu trabalho sem e-mail. No modo imagens e voz, toque no microfone grande para começar. O navegador pode enviar sua fala ao serviço de reconhecimento pela internet. Ouça cada pergunta, fale depois do sinal e confirme a resposta. O WhatsApp é opcional. No final, ouça o resumo antes de autorizar a publicação. O interruptor com a bolinha à esquerda, do lado do livro, permite preencher com textos."), 400 if erros else 200
+                               fala="Você pode cadastrar seu trabalho sem e-mail. No modo imagens e voz, toque no microfone grande para começar. " + ("Um assistente de inteligência artificial ouve suas respostas: sua voz é enviada pela internet a um serviço externo e não fica guardada aqui. " if app.extensions["agente_ia"].ativo else "O navegador pode enviar sua fala ao serviço de reconhecimento pela internet. ") + "Ouça cada pergunta, fale depois do sinal e confirme a resposta. O WhatsApp é opcional. No final, ouça o resumo antes de autorizar a publicação. O interruptor com a bolinha à esquerda, do lado do livro, permite preencher com textos."), 400 if erros else 200
 
     @app.get("/api/profissionais")
     def api_profissionais():

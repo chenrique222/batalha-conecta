@@ -1,7 +1,7 @@
 @echo off
 setlocal
 cd /d "%~dp0"
-echo BATALHA CONECTA - versao 0.6 - marca, categorias e voz mais rapida
+echo BATALHA CONECTA - versao 0.7 - assistente de IA para ouvir e entender
 echo.
 set "BATALHA_AMBIENTE=.venv"
 set "BATALHA_PYTHON=.venv\Scripts\python.exe"
@@ -38,6 +38,7 @@ if errorlevel 1 (
 echo.
 echo Abra no navegador: http://127.0.0.1:5000
 echo Em Ajuda, escolha e ouca Francisca ou Antonio. As vozes usam internet.
+if exist ".env" (echo Assistente de IA: arquivo .env encontrado.) else (echo Assistente de IA desativado. Para ativar gratis, abra configurar_ia_windows.bat.)
 echo Mantenha esta janela aberta. Para encerrar, pressione Ctrl+C.
 "%BATALHA_PYTHON%" app.py
 pause

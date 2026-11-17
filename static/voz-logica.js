@@ -44,9 +44,21 @@
       const telefone = telefoneFalado(valor);
       return telefone !== null ? {valor:telefone} : {erro:"Não consegui conferir o número. Diga o DDD e o telefone, um dígito de cada vez. Ou diga pular."};
     }
-    const maximo = campo === "descricao" ? 700 : 80;
-    if (valor.length < 2 || valor.length > maximo) return {erro:campo === "descricao" ? "Conte seu trabalho em uma frase mais curta." : "Não entendi. Diga novamente, de forma curta."};
-    return {valor};
+    const curto = campo !== "descricao";
+    // A transcrição costuma terminar com ponto: "Centro." vira "Centro".
+    const limpo = curto ? valor.replace(/\.$/, "").trim() : valor;
+    if (limpo.length < 2 || limpo.length > (curto ? 80 : 700)) return {erro:curto ? "Não entendi. Diga novamente, de forma curta." : "Conte seu trabalho em uma frase mais curta."};
+    return {valor:limpo};
+  }
+  /* Falas que as regras fixas resolvem com certeza. As outras vão para o assistente de IA. */
+  function clara(fase, campo, texto) {
+    const comando = limpar(texto);
+    if (["cancelar cadastro", "pausar", "ouvir de novo"].includes(comando)) return true;
+    if (fase === "confirmacao") return sim(texto) || nao(texto);
+    if (fase === "revisao") return publicar(texto) || corrigirCampo(texto) >= 0;
+    if (campo === "telefone") return telefoneFalado(texto) !== null;
+    if (campo === "categoria") return comando.split(" ").length <= 3 && Boolean(categoriaFalado(texto));
+    return false;
   }
   const sim = texto => /^(sim|sim esta certo|esta certo|esta correto|correto|confirmo|pode continuar|isso|isso mesmo)$/.test(limpar(texto));
   const nao = texto => /^(nao|nao esta certo|repetir|repita|corrigir|tentar novamente)$/.test(limpar(texto));
@@ -65,7 +77,7 @@
     const campos = {nome:0,atividade:1,categoria:1,descricao:2,apresentacao:2,comunidade:3,bairro:3,telefone:4,numero:4,whatsapp:4};
     return campos[normal.slice(9)] ?? -1;
   }
-  const api = {limpar, etapas, categorias, categoriaFalado, telefoneFalado, validar, sim, nao, publicar, lerValor, resumo, corrigirCampo};
+  const api = {limpar, etapas, categorias, categoriaFalado, telefoneFalado, validar, sim, nao, publicar, lerValor, resumo, corrigirCampo, clara};
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else raiz.BatalhaVoz = api;
 })(typeof window !== "undefined" ? window : {});

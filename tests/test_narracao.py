@@ -47,6 +47,31 @@ class Narracao(unittest.TestCase):
         self.assertEqual(resposta.status_code,503)
         self.assertIn("erros",resposta.json)
 
+    def test_falas_fixas_ficam_em_disco_e_respostas_nao(self):
+        pasta = tempfile.TemporaryDirectory()
+        self.addCleanup(pasta.cleanup)
+        voz = VozNatural(pasta_cache=pasta.name)
+        voz._gerar = AsyncMock(return_value=b"ID3"+b"a"*150)
+        voz.sintetizar("Qual é o seu nome?", "francisca", guardar=True)
+        voz.sintetizar("Entendi: Maria das Dores.", "francisca")
+        import pathlib
+        self.assertEqual(len(list(pathlib.Path(pasta.name).glob("*.mp3"))), 1)
+        # Depois de reiniciar, a fala fixa vem do disco, sem internet.
+        nova = VozNatural(pasta_cache=pasta.name)
+        nova._gerar = AsyncMock(side_effect=TimeoutError())
+        self.assertEqual(nova.sintetizar("Qual é o seu nome?", "francisca"), b"ID3"+b"a"*150)
+        with self.assertRaises(VozIndisponivel): nova.sintetizar("Entendi: Maria das Dores.", "francisca")
+        with self.assertRaises(VozIndisponivel): nova.sintetizar("Qual é o seu nome?", "antonio")
+        nova._gerar.side_effect = None
+        self.assertTrue(nova.sintetizar("Outra fala", "antonio"))
+
+    def test_rota_marca_fala_fixa(self):
+        voz = Mock()
+        voz.sintetizar.return_value = b"ID3" + b"a"*150
+        self.app.extensions["voz_natural"] = voz
+        self.cliente.post("/api/voz",data={"texto":"Olá!","csrf":self.csrf,"narrador":"francisca","fixa":"1"})
+        voz.sintetizar.assert_called_once_with("Olá!", "francisca", guardar=True)
+
     def test_cache_separa_vozes_e_libera_trava_apos_falha(self):
         voz = VozNatural()
         voz._gerar = AsyncMock(return_value=b"ID3"+b"a"*150)

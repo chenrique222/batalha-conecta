@@ -1,10 +1,12 @@
+> Atualização 0.7: assistente de IA gratuito para ouvir e entender o cadastro por voz. Ative em poucos minutos seguindo `NOVIDADES_V07.md`. Sem a chave, o aplicativo funciona como na 0.6.
+>
 > Atualização 0.6: logo completa, favicon do mapa, nova frase, categorias reorganizadas e menor espera pela voz. Veja `NOVIDADES_V06.md` para atualizar preservando seus cadastros e `GUIA_PERSONALIZACAO.md` para editar o visual.
 
-# Batalha Conecta · versão 0.6
+# Batalha Conecta · versão 0.7
 
 Versão funcional para estudar e demonstrar com a turma de Desenvolvimento de Sistemas.
 
-Esta versão usa as vozes neurais brasileiras **Francisca** e **Antônio**, via `edge-tts`, e mantém **avaliações em áudio** e **galeria de até cinco fotos por perfil**. Em **Ajuda**, ouça e escolha a narração. As vozes naturais precisam de internet para textos novos e enviam o texto a ser narrado ao serviço da Microsoft. Se o áudio demorar mais de 2,5 segundos ou falhar, o app tenta a voz do aparelho. A opção **Voz rápida do aparelho** evita essa espera desde o início. As amostras de Ajuda já acompanham o pacote.
+Esta versão usa as vozes neurais brasileiras **Francisca** e **Antônio**, via `edge-tts`, e mantém **avaliações em áudio** e **galeria de até cinco fotos por perfil**. Em **Ajuda**, ouça e escolha a narração. As vozes naturais precisam de internet para textos novos e enviam o texto a ser narrado ao serviço da Microsoft. A fala toca frase por frase; se uma parte falhar ou passar de 5 segundos, o app tenta a voz do aparelho. A opção **Voz rápida do aparelho** evita essa espera desde o início. As amostras de Ajuda já acompanham o pacote.
 
 Escolha entre **Imagens e voz** (pessoa falando) e **Textos** (livro) no interruptor no topo da tela. O cadastro por voz faz perguntas, lê as respostas, permite correções e publica após autorização. Não exige e-mail. Leia `GUIA_ICONES_E_VOZ.md` para testar com a turma, conhecer os comandos e distinguir cadastro de perfil de acesso a uma conta.
 
@@ -14,7 +16,7 @@ O cabeçalho usa a logo completa enviada pelo professor e a frase “Valorizando
 
 Os quatro perfis iniciais são fictícios, não têm telefone e usam ilustrações. A opção “Ouvir descrição” usa a voz neural escolhida; se indisponível, tenta a voz do aparelho. É uma leitura sintetizada, não uma gravação da pessoa. Para demonstrar a voz de um trabalhador, crie um perfil e grave ou envie um áudio.
 
-No novo assistente, a fala vira texto e o áudio original não é anexado ao perfil. A gravação de apresentação continua disponível no formulário com textos. O assistente usa o reconhecimento do navegador, que pode depender de internet e de um serviço externo. Não há API paga nem chave de IA configurada neste pacote; a disponibilidade do ditado varia por navegador.
+No novo assistente, a fala vira texto e o áudio original não é anexado ao perfil. A gravação de apresentação continua disponível no formulário com textos. Sem configuração, o assistente usa o reconhecimento do navegador, que pode depender de internet e varia por navegador. Com uma chave gratuita da Groq, um assistente de IA passa a ouvir e a entender as respostas com mais acerto, em qualquer navegador que grave áudio; a voz é enviada a esse serviço externo. O pacote não traz chave: veja `NOVIDADES_V07.md`.
 
 ## 1. Abrir no Windows
 
@@ -158,6 +160,7 @@ Quando não há conexão, o app exibe uma tela de aviso. Os perfis não são arm
 | `static/voz-logica.js` | Perguntas, reconhecimento de categorias e conferência de números ditados. |
 | `static/cadastro-voz.js` | Conversa, confirmações, pausa, correções e envio do cadastro por voz. |
 | `GUIA_ICONES_E_VOZ.md` | Roteiro de demonstração e limites da versão 0.6. |
+| `NOVIDADES_V07.md` | Como ativar o assistente de IA gratuito, limites e privacidade. |
 | `static/manifest.webmanifest` | Nome, ícone e modo de abertura do PWA. |
 | `static/sw.js` | Exibição do aviso quando o servidor fica indisponível. |
 | `aulas/` | Quatro exemplos curtos para aprender antes do projeto completo. |
@@ -178,7 +181,7 @@ Os 25 testes Python verificam cadastro, busca, galeria de cinco fotos, migraçã
 
 Voz audível, permissão de microfone, ligação, abertura do WhatsApp e instalação no celular precisam de teste no aparelho. Os testes não fazem ligações nem enviam mensagens.
 
-As regras da conversa e da escuta têm 14 testes opcionais, executados com `node --test tests/test_voz.cjs tests/test_escuta.cjs`. Para testar também a interface com navegador simulado, instale as dependências de desenvolvimento com `npm install` e execute `.\.venv\Scripts\python.exe verificar_interface.py`. Esses testes usam dados temporários. Node não é necessário para abrir o aplicativo. Consulte `NOVIDADES_V06.md` para os resultados e limites dos testes desta atualização.
+As regras da conversa e da escuta têm 28 testes opcionais, executados com `npm run test:voz`. Para testar também a interface com navegador simulado, instale as dependências de desenvolvimento com `npm install` e execute `.\.venv\Scripts\python.exe verificar_interface.py`. Esses testes usam dados temporários. Node não é necessário para abrir o aplicativo. Consulte `NOVIDADES_V07.md` para os resultados e limites dos testes desta atualização.
 
 ## Referências técnicas
 

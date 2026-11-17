@@ -41,5 +41,7 @@ O verificador usa um banco temporário e não modifica os cadastros da instalaç
 O navegador completo não pôde ser iniciado neste ambiente. Os testes de interação usam jsdom e simulam captura, reprodução de áudio e reconhecimento de fala. Eles verificam estados, dados enviados e persistência, mas não comprovam qualidade audível, layout renderizado, permissão de microfone real ou comportamento em todos os celulares.
 
 O microfone físico do professor, a execução do iniciador em Windows e a instalação como PWA devem ser conferidos nos aparelhos usados na feira. As vozes naturais dependem de um serviço externo e de internet. Para gravar pelo celular, o endereço precisa usar HTTPS.
+> Atualização 0.7: os resultados atuais estão em `NOVIDADES_V07.md` (50 testes Python, 25 de lógica/escuta e os cenários de interface, com o serviço de IA simulado).
+>
 > Atualização 0.6: os resultados atuais estão em `NOVIDADES_V06.md`. Passaram 25 testes Python, 14 testes de lógica/escuta e os testes de interface simulada, incluindo atrasos da narração e migração de categorias. O conteúdo abaixo registra verificações da versão anterior.
 

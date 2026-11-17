@@ -1,4 +1,5 @@
-/* Narração com cache em memória e alternativa rápida se a voz online demorar. */
+/* Narração com voz natural. As falas fixas são preparadas antes de serem
+   necessárias; a voz do aparelho só entra se a voz natural falhar de verdade. */
 "use strict";
 let botaoFalando = null;
 let geracaoFala = 0;
@@ -7,7 +8,10 @@ let fonteVoz = null;
 let contextoVoz = null;
 let limiteVoz = null;
 const statusVoz = document.querySelector("#status-voz");
-const ESPERA_VOZ_ONLINE = 2500;
+// Prazo para cada parte da fala. Uma frase curta costuma chegar em 1 a 2 segundos.
+const ESPERA_VOZ_ONLINE = 5000;
+const NARRADORES = ["francisca", "antonio", "aparelho"];
+const AMOSTRAS_PRONTAS = ["francisca", "antonio"];
 const PAUSA_SERVICO_LENTO = 30000;
 const cacheAudios = new Map();
 const servicoLentoAte = new Map();
@@ -15,10 +19,52 @@ let cacheAudioBytes = 0;
 const TEXTO_AMOSTRA = "Olá! Vamos mostrar o seu trabalho? Você pode falar com calma. Estou aqui para ajudar.";
 let narradorEscolhido = "francisca";
 try { narradorEscolhido = localStorage.getItem("batalha-narrador") || "francisca"; } catch (_) {}
-if (!["francisca", "antonio", "aparelho"].includes(narradorEscolhido)) narradorEscolhido = "francisca";
+// Quem tinha escolhido Thalita (versão anterior) volta para Francisca.
+if (!NARRADORES.includes(narradorEscolhido)) narradorEscolhido = "francisca";
+// Falas fixas do aplicativo: o servidor pode guardá-las em disco. Respostas de pessoas nunca entram aqui.
+const falasFixas = new Set([TEXTO_AMOSTRA]);
+document.querySelectorAll("[data-falar]").forEach(elemento => { if (elemento.dataset.falar) falasFixas.add(elemento.dataset.falar); });
+const preparadas = new Map();
+let filaPreparo = Promise.resolve();
+
+async function buscarVoz(texto, narrador, sinal, fixa = falasFixas.has(texto)) {
+  const dados = new FormData();
+  dados.set("texto", texto);
+  dados.set("narrador", narrador);
+  if (fixa) dados.set("fixa", "1");
+  dados.set("csrf", document.querySelector('meta[name="csrf-token"]')?.content || "");
+  const resposta = await fetch("/api/voz", {method:"POST", body:dados, signal:sinal, headers:{Accept:"audio/mpeg, application/json"}});
+  if (!resposta.ok) throw new Error("Voz indisponível");
+  return resposta.arrayBuffer();
+}
+/* Busca em segundo plano, uma de cada vez, as falas que a tela vai usar. */
+/* `inteiras`: trechos que tocam como uma parte só, depois de uma frase variável ("Anotei: …"). */
+function prepararFalas(textos, inteiras = []) {
+  const narrador = narradorEscolhido;
+  const primeiras = [], demais = [];
+  for (const texto of textos) {
+    if (!texto || texto.length > 2500) continue;
+    falasFixas.add(texto);
+    const partes = dividirFala(texto);
+    primeiras.push(partes[0]);
+    demais.push(...partes.slice(1));
+  }
+  for (const texto of [...primeiras, ...inteiras, ...demais]) {
+    falasFixas.add(texto);
+    // Sem saída de áudio para a voz natural, o preparo seria um pedido desperdiçado.
+    if (narrador === "aparelho" || typeof fetch !== "function" || !(window.AudioContext || window.webkitAudioContext)) continue;
+    const chave = narrador + "\u0000" + texto;
+    if (cacheAudios.has(chave) || preparadas.has(chave) || preparadas.size >= 60) continue;
+    const item = {iniciada:false, bytes:null};
+    item.bytes = filaPreparo.then(() => { item.iniciada = true; return buscarVoz(texto, narrador); });
+    item.bytes.catch(() => preparadas.delete(chave));
+    preparadas.set(chave, item);
+    filaPreparo = item.bytes.catch(() => {});
+  }
+}
 
 function escolherNarrador(nome) {
-  if (!["francisca", "antonio", "aparelho"].includes(nome)) return;
+  if (!NARRADORES.includes(nome)) return;
   narradorEscolhido = nome;
   try { localStorage.setItem("batalha-narrador", nome); } catch (_) {}
   document.querySelectorAll("[data-narrador]").forEach(botao => botao.setAttribute("aria-current", String(botao.dataset.narrador === nome)));
@@ -67,6 +113,21 @@ function pararVoz() {
   statusVoz.hidden = true;
 }
 
+/* Divide a fala em frases. A primeira toca assim que fica pronta; as outras são
+   preparadas enquanto ela toca. Assim, um texto longo não deixa a pessoa esperando. */
+function dividirFala(texto) {
+  const frases = (texto.match(/[^.!?…]+(?:[.!?…]+["”»)]*|$)/g) || [texto]).map(frase => frase.trim()).filter(Boolean);
+  const partes = [];
+  for (const frase of frases) {
+    const ultima = partes[partes.length - 1];
+    // A primeira parte fica curta para começar logo; uma frase muito curta ("Olá!") vai junto com a seguinte.
+    // Depois da primeira parte, as frases se juntam até ~240 letras.
+    if (ultima !== undefined && (ultima.length < 12 || (partes.length > 1 && ultima.length + frase.length < 240))) partes[partes.length - 1] = `${ultima} ${frase}`;
+    else partes.push(frase);
+  }
+  return partes.length ? partes : [texto];
+}
+
 function falar(texto, botao, aoTerminar = null, aoFalhar = null) {
   if (!aoTerminar && botaoFalando === botao) { pararVoz(); return; }
   pararVoz();
@@ -74,7 +135,6 @@ function falar(texto, botao, aoTerminar = null, aoFalhar = null) {
   document.dispatchEvent(new Event("narracaoiniciada"));
   const atual = geracaoFala;
   const narrador = narradorEscolhido;
-  const chave = narrador + "\u0000" + texto;
   let finalizada = false;
   let alternativaIniciada = false;
   botaoFalando = botao;
@@ -99,7 +159,8 @@ function falar(texto, botao, aoTerminar = null, aoFalhar = null) {
     statusVoz.textContent = "Não foi possível reproduzir a fala. Confira o volume e tente o botão de ouvir novamente.";
     if (aoFalhar) aoFalhar();
   }
-  function vozDoAparelho() {
+  /* Lê com a voz do aparelho o que ainda falta dizer. */
+  function vozDoAparelho(resto = texto) {
     if (!vigente() || alternativaIniciada) return;
     alternativaIniciada = true;
     clearTimeout(limiteVoz);
@@ -108,7 +169,7 @@ function falar(texto, botao, aoTerminar = null, aoFalhar = null) {
     if (!window.speechSynthesis) { terminarSemVoz(); return; }
     statusVoz.hidden = false;
     statusVoz.textContent = narrador === "aparelho" ? "Usando a voz do aparelho." : "Usando a voz do aparelho para evitar a espera.";
-    const frase = new SpeechSynthesisUtterance(texto);
+    const frase = new SpeechSynthesisUtterance(resto);
     frase.lang = "pt-BR";
     frase.rate = 1;
     const vozes = window.speechSynthesis.getVoices();
@@ -120,7 +181,49 @@ function falar(texto, botao, aoTerminar = null, aoFalhar = null) {
     };
     try { window.speechSynthesis.speak(frase); } catch (_) { terminarSemVoz(); }
   }
-  function tocar(audio) {
+  if (narrador === "aparelho") { vozDoAparelho(); return; }
+  const Contexto = window.AudioContext || window.webkitAudioContext;
+  if (!Contexto) { vozDoAparelho(); return; }
+  const amostra = texto === TEXTO_AMOSTRA;
+  const amostraPronta = amostra && AMOSTRAS_PRONTAS.includes(narrador);
+  const partes = amostraPronta ? [texto] : dividirFala(texto);
+  const chaveDe = parte => narrador + "\u0000" + parte;
+  const fixa = falasFixas.has(texto);
+  const guardadaInicio = cacheAudios.has(chaveDe(partes[0]));
+  // Depois de uma falha, não repetimos a mesma espera a cada pergunta.
+  if (!guardadaInicio && !amostra && (servicoLentoAte.get(narrador) || 0) > Date.now()) { vozDoAparelho(); return; }
+  const controlador = new AbortController();
+  pedidoVoz = controlador;
+  const carregando = new Map();
+  /* Obtém o áudio de uma parte: memória, preparo antecipado, amostra ou servidor. */
+  function carregar(indice) {
+    if (carregando.has(indice)) return carregando.get(indice);
+    const parte = partes[indice];
+    const chave = chaveDe(parte);
+    const promessa = (async () => {
+      const guardado = cacheAudios.get(chave);
+      if (guardado) { cacheAudios.delete(chave); cacheAudios.set(chave, guardado); return guardado.audio; }
+      let bytes = null;
+      const preparada = preparadas.get(chave);
+      // Só aproveitamos o preparo que já começou; o que ainda está na fila demoraria mais.
+      if (preparada && preparada.iniciada) bytes = await preparada.bytes.then(pronto => pronto.slice(0), () => null);
+      if (!bytes && amostraPronta) {
+        const resposta = await fetch(`/static/vozes/amostra-${narrador}.mp3`, {signal:controlador.signal});
+        if (!resposta.ok) throw new Error("Voz indisponível");
+        bytes = await resposta.arrayBuffer();
+      } else if (!bytes) {
+        bytes = await buscarVoz(parte, narrador, controlador.signal, fixa || falasFixas.has(parte));
+      }
+      const audio = await contextoVoz.decodeAudioData(bytes);
+      guardarAudio(chave, audio);
+      preparadas.delete(chave);
+      return audio;
+    })();
+    promessa.catch(() => {});
+    carregando.set(indice, promessa);
+    return promessa;
+  }
+  function tocar(audio, depois) {
     if (!vigente() || alternativaIniciada) return;
     if (contextoVoz.state !== "running") throw new Error("Áudio pausado pelo navegador");
     const fonte = contextoVoz.createBufferSource();
@@ -130,58 +233,51 @@ function falar(texto, botao, aoTerminar = null, aoFalhar = null) {
       if (!vigente() || alternativaIniciada) return;
       fonte.disconnect();
       if (fonteVoz === fonte) fonteVoz = null;
-      terminar();
+      depois();
     };
     fonteVoz = fonte;
     fonte.start();
     clearTimeout(limiteVoz);
-    pedidoVoz = null;
     statusVoz.hidden = true;
   }
-  if (narrador === "aparelho") { vozDoAparelho(); return; }
-  const Contexto = window.AudioContext || window.webkitAudioContext;
-  if (!Contexto) { vozDoAparelho(); return; }
-  const guardado = cacheAudios.get(chave);
-  const amostra = texto === TEXTO_AMOSTRA;
-  // Depois de uma falha, não repetimos a mesma espera a cada pergunta.
-  if (!guardado && !amostra && (servicoLentoAte.get(narrador) || 0) > Date.now()) { vozDoAparelho(); return; }
-  const controlador = new AbortController();
-  pedidoVoz = controlador;
-  const usarAlternativa = () => {
+  /* Toca a parte `indice`. O prazo vale para cada espera, não para a fala inteira. */
+  function tocarParte(indice) {
     if (!vigente() || alternativaIniciada) return;
-    if (!amostra && !guardado) servicoLentoAte.set(narrador, Date.now() + PAUSA_SERVICO_LENTO);
-    vozDoAparelho();
-  };
-  // O prazo cobre também um download ou uma decodificação que não terminam.
-  limiteVoz = setTimeout(usarAlternativa, ESPERA_VOZ_ONLINE);
+    const resto = () => partes.slice(indice).join(" ");
+    const desistir = () => {
+      if (!vigente() || alternativaIniciada) return;
+      if (indice === 0 && !amostra) servicoLentoAte.set(narrador, Date.now() + PAUSA_SERVICO_LENTO);
+      vozDoAparelho(resto());
+    };
+    // O prazo cobre também um download ou uma decodificação que não terminam.
+    clearTimeout(limiteVoz);
+    limiteVoz = setTimeout(desistir, ESPERA_VOZ_ONLINE);
+    carregar(indice).then(audio => {
+      if (!vigente() || alternativaIniciada) return;
+      if (indice === 0 && !amostra) servicoLentoAte.delete(narrador);
+      const proxima = indice + 1 < partes.length;
+      if (proxima) carregar(indice + 1);
+      tocar(audio, () => {
+        if (!proxima) { pedidoVoz = null; terminar(); return; }
+        tocarParte(indice + 1);
+      });
+    }).catch(desistir);
+  }
   let pronta;
   try {
     contextoVoz ||= new Contexto();
     pronta = contextoVoz.resume();
-  } catch (_) { usarAlternativa(); return; }
-  Promise.resolve(pronta).then(async () => {
+  } catch (_) { vozDoAparelho(); return; }
+  // Enquanto o navegador libera o som, a primeira e a segunda partes já são pedidas.
+  if (contextoVoz) { carregar(0); if (partes.length > 1) carregar(1); }
+  clearTimeout(limiteVoz);
+  limiteVoz = setTimeout(() => {
     if (!vigente() || alternativaIniciada) return;
-    if (guardado) {
-      cacheAudios.delete(chave); cacheAudios.set(chave, guardado);
-      tocar(guardado.audio); return;
-    }
-    let resposta;
-    if (amostra) {
-      resposta = await fetch(`/static/vozes/amostra-${narrador}.mp3`, {signal:controlador.signal});
-    } else {
-      const dados = new FormData();
-      dados.set("texto", texto);
-      dados.set("narrador", narrador);
-      dados.set("csrf", document.querySelector('meta[name="csrf-token"]')?.content || "");
-      resposta = await fetch("/api/voz", {method:"POST", body:dados, signal:controlador.signal, headers:{Accept:"audio/mpeg, application/json"}});
-    }
-    if (!resposta.ok) throw new Error("Voz indisponível");
-    const bytes = await resposta.arrayBuffer();
+    if (!amostra && !guardadaInicio) servicoLentoAte.set(narrador, Date.now() + PAUSA_SERVICO_LENTO);
+    vozDoAparelho();
+  }, ESPERA_VOZ_ONLINE);
+  Promise.resolve(pronta).then(() => tocarParte(0), () => {
     if (!vigente() || alternativaIniciada) return;
-    const audio = await contextoVoz.decodeAudioData(bytes);
-    if (!vigente() || alternativaIniciada) return;
-    guardarAudio(chave, audio);
-    if (!amostra) servicoLentoAte.delete(narrador);
-    tocar(audio);
-  }).catch(usarAlternativa);
+    vozDoAparelho();
+  });
 }

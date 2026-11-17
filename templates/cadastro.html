@@ -10,7 +10,7 @@
   <button type="button" class="botao suave" id="usar-voz" aria-pressed="false">{{ icone('microfone') }} Preencher falando</button>
   <button type="button" class="botao contorno" id="usar-formulario" aria-pressed="true">{{ icone('texto') }} Preencher digitando</button>
 </div>
-<section id="cadastro-voz" class="cadastro-voz" aria-label="Cadastro guiado por voz" hidden>
+<section id="cadastro-voz" class="cadastro-voz" aria-label="Cadastro guiado por voz" data-ia="{{ '1' if ia_ativa else '0' }}" hidden>
   <ol class="progresso-voz" aria-label="Informações do cadastro">
     {% for campo, simbolo, titulo in [('nome','pessoa','nome'),('categoria','loja','atividade'),('descricao','microfone','apresentação'),('comunidade','local','comunidade'),('telefone','whatsapp','WhatsApp')] %}
     <li><button type="button" data-corrigir="{{ campo }}" aria-label="Corrigir {{ titulo }}" disabled>{{ icone(simbolo) }}</button></li>
@@ -18,8 +18,13 @@
   </ol>
   <div class="voz-ilustracao" aria-hidden="true">{{ icone('pessoa') }}</div>
   <h2 id="voz-titulo" class="texto-ui">Vamos conversar?</h2>
+  {% if ia_ativa %}
+  <p class="texto-ui voz-intro">Fale depois do sinal, no seu ritmo. Quando terminar, espere um instante ou toque na marca de confirmação. Você poderá corrigir antes de publicar.</p>
+  <p id="voz-status" class="texto-ui" role="status" aria-live="polite">Um assistente de inteligência artificial ouve suas respostas. Sua voz é enviada a um serviço externo e não fica guardada aqui. O perfil só será publicado após sua confirmação.</p>
+  {% else %}
   <p class="texto-ui voz-intro">Fale depois do sinal, no seu ritmo. Ao acabar, diga “terminei” ou toque na marca de confirmação. Você poderá corrigir antes de publicar.</p>
   <p id="voz-status" class="texto-ui" role="status" aria-live="polite">O navegador pode enviar sua fala ao serviço de reconhecimento. O perfil só será publicado após sua confirmação.</p>
+  {% endif %}
   <div class="voz-controles">
     <button type="button" id="voz-microfone" class="botao principal voz-microfone" aria-label="Começar conversa" aria-pressed="false">{{ icone('microfone') }}<span class="texto-ui">Começar conversa</span></button>
     <button type="button" id="voz-repetir" class="botao contorno" aria-label="Ouvir pergunta novamente">{{ icone('som') }}<span class="texto-ui">Ouvir de novo</span></button>
@@ -39,7 +44,7 @@
   <button type="button" id="voz-cancelar" class="botao contorno" aria-label="Cancelar a conversa e apagar este rascunho">{{ icone('fechar') }}<span class="texto-ui">Cancelar conversa</span></button>
   <div id="voz-indisponivel" hidden>
     {{ icone('ajuda') }}
-    <p class="texto-ui">O ditado não está disponível. Tente um navegador com reconhecimento de fala e HTTPS ou localhost. Também é possível preencher com ajuda.</p>
+    <p class="texto-ui">O ditado não está disponível. {% if ia_ativa %}Confira a internet e a permissão do microfone, em HTTPS ou localhost.{% else %}Tente um navegador com reconhecimento de fala e HTTPS ou localhost.{% endif %} Também é possível preencher com ajuda.</p>
     <button type="button" class="botao ajuda" id="voz-ajuda" aria-label="Ouvir ajuda para usar o cadastro">{{ icone('som') }}<span class="texto-ui">Ouvir ajuda</span></button>
     <button type="button" class="botao contorno" id="voz-formulario" aria-label="Abrir formulário com textos para preenchimento acompanhado">{{ icone('texto') }}<span class="texto-ui">Preencher com ajuda</span></button>
   </div>

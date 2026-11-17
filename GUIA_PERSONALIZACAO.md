@@ -18,7 +18,7 @@ A logo completa enviada foi guardada sem alteração de tamanho, cores ou transp
 
 Abaixo da marca aparece **“Valorizando o serviço da nossa gente”**. O mapa verde usado antes no cabeçalho agora também identifica a aba do navegador e o aplicativo instalado.
 
-O modo com textos usa azul sóbrio, verde suave e fundos claros. O modo Imagens e voz usa cores mais distintas nas ações: verde para falar, azul para buscar, amarelo para ouvir, lilás para fotos e coral para parar ou cancelar. Cada cor acompanha um desenho e uma orientação em áudio.
+A paleta “Sertão conectado” parte da logo: o **azul-marinho** do fundo e o **verde** do mapa e das setas, com o **âmbar** do sol e a **terracota** do barro. Cada cor tem um único significado, igual nos dois modos: verde para falar e confirmar, azul para procurar, âmbar para ouvir e terracota para parar ou cancelar. Ações de apoio (ajuda, fotos, celular) usam azul claro. No modo Imagens e voz, as cores ficam mais fortes; no modo com textos, em tons claros. Cada cor acompanha um desenho e uma orientação em áudio.
 
 ## 3. Onde fica cada mudança
 
@@ -117,16 +117,21 @@ Abra `static/estilo.css`. A paleta está organizada no começo, dentro de `:root
 
 | Variável | Cor atual | Uso |
 | --- | --- | --- |
-| `--fundo` | `#f8f9fb` | Fundo da página |
+| `--marca-fundo` | `#0b2149` | Faixa do cabeçalho e fundo da logo |
+| `--fundo` | `#f5f6f2` | Fundo da página |
 | `--papel` | `#ffffff` | Cartões e campos |
-| `--texto` | `#26354a` | Texto principal |
-| `--secundario` | `#586779` | Legendas e explicações |
-| `--azul-forte` | `#253d63` | Títulos e botões principais |
-| `--azul` | `#e8eef6` | Fundos azulados suaves |
-| `--verde` | `#e4eee6` | Fundos verdes suaves |
-| `--verde-forte` | `#416554` | Detalhes e seleções |
-| `--areia` | `#f3efdf` | Áreas de ajuda e avisos |
-| `--marca-fundo` | `#0a1f4a` | Fundo da marca |
+| `--texto` | `#17284a` | Texto principal |
+| `--secundario` | `#4f5d73` | Legendas e explicações |
+| `--azul-forte` | `#1b3f78` | Títulos e botões principais |
+| `--azul` | `#e6edf7` | Fundos azulados suaves, ações de apoio |
+| `--verde-forte` | `#0f7a55` | Falar, confirmar, seleções |
+| `--verde` | `#dff1e7` | Fundos verdes suaves |
+| `--verde-vivo` | `#2fbf71` | Destaques: microfone ouvindo, menu atual |
+| `--ambar` | `#f0b23e` | Botões de ouvir (alto-falante) |
+| `--ambar-claro` | `#fcf1d8` | Avisos e botões de ouvir no modo textos |
+| `--terracota` | `#b4452c` | Parar, cancelar e erros |
+
+Todas as combinações de texto e fundo foram conferidas com contraste de pelo menos 4,5:1, o mínimo recomendado para leitura.
 
 Por exemplo, para experimentar um fundo levemente mais quente, substitua apenas a linha correspondente.
 
@@ -136,7 +141,7 @@ Por exemplo, para experimentar um fundo levemente mais quente, substitua apenas 
 
 Salve e confira com Ctrl+F5. Mantenha os textos escuros nos fundos claros e confira se as palavras e os ícones continuam fáceis de distinguir. As cores de erro, gravação e estrelas têm funções próprias.
 
-A cor da moldura do aplicativo instalado também aparece em `theme_color` de `static/manifest.webmanifest` e na meta `theme-color` de `templates/base.html` e `static/offline.html`. Nesta atualização, todos usam `#253d63`.
+A cor da moldura do aplicativo instalado também aparece em `theme_color` de `static/manifest.webmanifest` e na meta `theme-color` de `templates/base.html` e `static/offline.html`. Nesta atualização, todos usam `#0b2149`, o azul-marinho da logo.
 
 ## 8. Alterar a frase abaixo do nome
 
