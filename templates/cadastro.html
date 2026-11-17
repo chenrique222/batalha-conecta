@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% from 'componentes.html' import icone, seletor_fotos %}
+{% block titulo %}Mostrar meu trabalho · Batalha Conecta{% endblock %}
+{% block conteudo %}
+<div class="cadastro-container">
+<a class="voltar" href="{{ url_for('inicio') }}" aria-label="Voltar ao início">{{ icone('voltar') }} <span class="texto-ui">Início</span></a>
+<h1 class="titulo-pagina texto-ui">Mostre o que você faz</h1>
+<p class="subtitulo texto-ui">Seu trabalho merece ser conhecido. Sem e-mail.</p>
+<div class="cadastro-opcoes apenas-texto" role="group" aria-label="Como preencher seu cadastro?">
+  <button type="button" class="botao suave" id="usar-voz" aria-pressed="false">{{ icone('microfone') }} Preencher falando</button>
+  <button type="button" class="botao contorno" id="usar-formulario" aria-pressed="true">{{ icone('texto') }} Preencher digitando</button>
+</div>
+<section id="cadastro-voz" class="cadastro-voz" aria-label="Cadastro guiado por voz" hidden>
+  <ol class="progresso-voz" aria-label="Informações do cadastro">
+    {% for campo, simbolo, titulo in [('nome','pessoa','nome'),('categoria','loja','atividade'),('descricao','microfone','apresentação'),('comunidade','local','comunidade'),('telefone','whatsapp','WhatsApp')] %}
+    <li><button type="button" data-corrigir="{{ campo }}" aria-label="Corrigir {{ titulo }}" disabled>{{ icone(simbolo) }}</button></li>
+    {% endfor %}
+  </ol>
+  <div class="voz-ilustracao" aria-hidden="true">{{ icone('pessoa') }}</div>
+  <h2 id="voz-titulo" class="texto-ui">Vamos conversar?</h2>
+  <p class="texto-ui voz-intro">Fale depois do sinal, no seu ritmo. Ao acabar, diga “terminei” ou toque na marca de confirmação. Você poderá corrigir antes de publicar.</p>
+  <p id="voz-status" class="texto-ui" role="status" aria-live="polite">O navegador pode enviar sua fala ao serviço de reconhecimento. O perfil só será publicado após sua confirmação.</p>
+  <div class="voz-controles">
+    <button type="button" id="voz-microfone" class="botao principal voz-microfone" aria-label="Começar conversa" aria-pressed="false">{{ icone('microfone') }}<span class="texto-ui">Começar conversa</span></button>
+    <button type="button" id="voz-repetir" class="botao contorno" aria-label="Ouvir pergunta novamente">{{ icone('som') }}<span class="texto-ui">Ouvir de novo</span></button>
+    <button type="button" id="voz-terminar" class="botao suave" aria-label="Terminei de responder. Conferir minha resposta" hidden>{{ icone('check') }}<span class="texto-ui">Terminei</span></button>
+  </div>
+  <div id="voz-confirmacoes" class="voz-controles" hidden>
+    <button type="button" id="voz-sim" class="botao principal" aria-label="Confirmar resposta">{{ icone('check') }}<span class="texto-ui">Sim</span></button>
+    <button type="button" id="voz-nao" class="botao contorno" aria-label="Responder novamente">{{ icone('repetir') }}<span class="texto-ui">Repetir</span></button>
+  </div>
+  <div id="voz-fotos" hidden></div>
+  <button id="voz-publicar" type="button" class="botao principal" aria-label="Autorizar e publicar meu perfil e contato" hidden>{{ icone('check') }}<span class="texto-ui">Autorizar e publicar</span></button>
+  <div id="voz-categorias" class="grade-categorias escolha-categorias" hidden>
+    {% for categoria in categorias %}
+    <button type="button" class="categoria-card {{ categoria.id }}" data-categoria-voz="{{ categoria.id }}" aria-label="{{ categoria.nome }}"><img src="{{ url_for('static', filename='artes/' + categoria.imagem) }}" alt="" width="300" height="180"><span class="texto-ui">{{ categoria.nome }}</span></button>
+    {% endfor %}
+  </div>
+  <button type="button" id="voz-cancelar" class="botao contorno" aria-label="Cancelar a conversa e apagar este rascunho">{{ icone('fechar') }}<span class="texto-ui">Cancelar conversa</span></button>
+  <div id="voz-indisponivel" hidden>
+    {{ icone('ajuda') }}
+    <p class="texto-ui">O ditado não está disponível. Tente um navegador com reconhecimento de fala e HTTPS ou localhost. Também é possível preencher com ajuda.</p>
+    <button type="button" class="botao ajuda" id="voz-ajuda" aria-label="Ouvir ajuda para usar o cadastro">{{ icone('som') }}<span class="texto-ui">Ouvir ajuda</span></button>
+    <button type="button" class="botao contorno" id="voz-formulario" aria-label="Abrir formulário com textos para preenchimento acompanhado">{{ icone('texto') }}<span class="texto-ui">Preencher com ajuda</span></button>
+  </div>
+</section>
+<noscript><p class="aviso">Preencha as etapas abaixo. O envio de fotos e de arquivos de áudio funciona mesmo sem JavaScript.</p></noscript>
+<ol class="etapas" id="etapas-manuais" aria-label="Etapas do cadastro"><li>Atividade</li><li>Apresentação</li><li>Contato</li><li>Conferir</li></ol>
+<div id="erros-cadastro" class="erros" role="alert" tabindex="-1" {% if not erros %}hidden{% endif %}>{% for erro in erros %}<p>{{ erro }}</p>{% endfor %}</div>
+<form id="form-cadastro" method="post" enctype="multipart/form-data" action="{{ url_for('cadastro') }}">
+<input type="hidden" name="csrf" value="{{ csrf }}">
+<input type="hidden" name="envio_id" value="{{ envio_id }}">
+<fieldset class="passo" data-ajuda="Escolha a atividade que melhor representa o seu trabalho. Depois, toque em Continuar.">
+  <legend>1. Qual é a sua atividade?</legend>
+  <div class="grade-categorias escolha-categorias">
+  {% for categoria in categorias %}
+  <label class="categoria-escolha"><input type="radio" name="categoria" value="{{ categoria.id }}" required {% if campos.categoria == categoria.id %}checked{% endif %}><span class="categoria-card {{ categoria.id }}"><img src="{{ url_for('static', filename='artes/' + categoria.imagem) }}" alt="" width="300" height="180"><strong>{{ categoria.nome }}</strong></span></label>
+  {% endfor %}
+  </div>
+</fieldset>
+<fieldset class="passo" data-ajuda="Diga seu nome ou o nome do seu trabalho. Conte o que faz por texto, ou use Gravar minha voz. Se quiser, adicione até cinco fotos. Depois, toque em Continuar.">
+  <legend>2. Apresente seu trabalho</legend>
+  <label for="nome">Seu nome ou o nome do trabalho <span class="obrigatorio">obrigatório</span></label>
+  <input id="nome" name="nome" value="{{ campos.nome }}" autocomplete="name" minlength="2" maxlength="80" required placeholder="Ex.: Artes da Rosa">
+  <label for="descricao">O que você faz?</label>
+  <textarea id="descricao" name="descricao" maxlength="700" rows="3" placeholder="Você pode escrever aqui ou contar por áudio abaixo.">{{ campos.descricao }}</textarea>
+  <div class="area-gravacao">
+    <strong>{{ icone('microfone') }} Conte com sua própria voz</strong>
+    <p>Exemplo: “Faço bolos de milho por encomenda”.</p>
+    <button class="botao suave" type="button" id="gravar" hidden>{{ icone('microfone') }} <span>Gravar minha voz</span></button>
+    <p id="status-gravacao" role="status" aria-live="polite"></p>
+    <label for="audio">Ou escolha um áudio do aparelho <span class="opcional">até 10 MB</span></label>
+    <input id="audio" name="audio" type="file" accept="audio/*,.m4a,.webm,.ogg,.wav,.mp3">
+    <audio id="previa-audio" controls hidden></audio>
+    <button class="botao contorno" type="button" id="remover-audio" hidden>Remover áudio</button>
+  </div>
+  <div id="fotos-manuais">{{ seletor_fotos('galeria-cadastro', 'form-cadastro') }}</div>
+</fieldset>
+<fieldset class="passo" data-ajuda="Informe seu bairro ou comunidade. Se quiser receber contatos, informe também seu telefone com DDD. O telefone aparecerá no perfil. Depois, toque em Continuar.">
+  <legend>3. Onde encontrar você?</legend>
+  <label for="comunidade">Bairro ou comunidade <span class="obrigatorio">obrigatório</span></label>
+  <input id="comunidade" name="comunidade" value="{{ campos.comunidade }}" minlength="2" maxlength="80" required placeholder="Ex.: Centro" autocomplete="address-level3">
+  <label for="telefone">WhatsApp ou telefone com DDD <span class="opcional">opcional</span></label>
+  <input id="telefone" name="telefone" value="{{ campos.telefone }}" type="tel" autocomplete="tel" maxlength="25" placeholder="DDD + número">
+  <p class="nota">Ao informar um número, seu perfil terá botões de WhatsApp e ligação.</p>
+</fieldset>
+<fieldset class="passo" data-ajuda="Confira o nome, a atividade e o contato. Você pode voltar para corrigir. Marque a confirmação se deseja mostrar suas informações e toque em Publicar meu trabalho.">
+  <legend>4. Está tudo certo?</legend>
+  <div id="resumo-cadastro" class="resumo-cadastro"></div>
+  <button class="botao suave" type="button" id="ouvir-resumo" hidden>{{ icone('som') }} Ouvir meu resumo</button>
+  <label class="confirmacao"><input type="checkbox" name="consentimento" value="sim" required> <span>Quero mostrar estas informações, fotos e áudios no projeto.</span></label>
+  <p class="nota">Nesta versão escolar, use dados fictícios para os testes.</p>
+</fieldset>
+<div class="controles-passos" id="controles-passos" hidden>
+  <button type="button" class="botao contorno" id="passo-anterior">{{ icone('voltar') }} Voltar</button>
+  <button type="button" class="botao principal" id="proximo-passo">Continuar {{ icone('seta') }}</button>
+</div>
+<button type="submit" class="botao principal publicar" id="publicar">{{ icone('check') }} Publicar meu trabalho</button>
+<button type="button" class="botao ajuda" id="ouvir-passo" hidden>{{ icone('som') }} Ouvir ajuda desta etapa</button>
+</form>
+</div>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% from 'componentes.html' import icone, foto_profissional %}
+{% block titulo %}Encontrar serviços · Batalha Conecta{% endblock %}
+{% block conteudo %}
+<a class="voltar" href="{{ url_for('inicio') }}">{{ icone('voltar') }} <span class="texto-ui">Início</span></a>
+<h1 class="titulo-pagina">{{ categorias_por_id[categoria].nome if categoria else 'Encontre quem faz' }}</h1>
+<p class="subtitulo">Trabalho local, perto de você.</p>
+<form class="form-busca apenas-texto" action="{{ url_for('profissionais') }}" method="get">
+  <label for="busca">Serviço, nome ou comunidade</label>
+  <div class="busca-campos"><input id="busca" type="search" name="busca" value="{{ busca }}" maxlength="120" placeholder="Ex.: bolo, pedreiro, Centro"><button type="submit" class="botao principal">{{ icone('busca') }} Buscar</button></div>
+  <input type="hidden" name="categoria" value="{{ categoria }}">
+</form>
+<nav class="filtros" aria-label="Filtrar por atividade">
+  <a class="filtro" href="{{ url_for('profissionais', busca=busca) }}" {% if not categoria %}aria-current="true"{% endif %} aria-label="Todas as atividades">{{ icone('grade') }}<span class="texto-ui">Todas</span></a>
+  {% for item in categorias %}<a class="filtro" href="{{ url_for('profissionais', categoria=item.id, busca=busca) }}" {% if categoria == item.id %}aria-current="true"{% endif %} aria-label="{{ item.nome }}"><img class="filtro-imagem" src="{{ url_for('static', filename='artes/' + item.imagem) }}" alt="" width="48" height="40"><span class="texto-ui">{{ item.nome }}</span></a>{% endfor %}
+</nav>
+<p class="contagem" role="status">{{ profissionais|length }} {{ 'perfil encontrado' if profissionais|length == 1 else 'perfis encontrados' }}</p>
+<div class="grade-profissionais">
+{% for pessoa in profissionais %}
+<article class="cartao-profissional">
+  <a class="foto-link" href="{{ url_for('perfil', identificador=pessoa.id) }}" tabindex="-1" aria-hidden="true">{{ foto_profissional(pessoa, categorias_por_id) }}</a>
+  <div class="cartao-conteudo">
+    <span class="etiqueta">{{ categorias_por_id[pessoa.categoria].nome }}</span>
+    <h2 class="texto-ui">{{ pessoa.nome }}</h2>
+    <p class="local-perfil texto-ui">{{ icone('local') }} {{ pessoa.comunidade }}</p>
+    <p class="descricao-curta">{{ pessoa.descricao or 'Conheça este trabalho pela apresentação em áudio.' }}</p>
+    {% if pessoa.demonstracao %}<small class="demonstracao">Perfil fictício para demonstração</small>{% endif %}
+    <div class="acoes-perfil">
+      <button type="button" class="botao suave" data-falar="{{ pessoa.nome }}. {{ categorias_por_id[pessoa.categoria].nome }}. {{ pessoa.comunidade }}. {{ pessoa.descricao or 'Abra o perfil para ouvir a apresentação.' }} {{ 'Este é um exemplo fictício.' if pessoa.demonstracao else '' }} {{ 'A imagem é um exemplo gerado por inteligência artificial, não é a foto deste profissional.' if not pessoa.foto and categorias_por_id[pessoa.categoria].imagem_ia else '' }}" aria-label="Ouvir perfil de {{ pessoa.nome }}">{{ icone('som') }}<span class="texto-ui">Ouvir</span></button>
+      <a class="botao principal" href="{{ url_for('perfil', identificador=pessoa.id) }}" aria-label="Ver perfil de {{ pessoa.nome }}"><span class="texto-ui">Ver perfil</span>{{ icone('seta') }}</a>
+    </div>
+  </div>
+</article>
+{% else %}
+<div class="vazio"><span class="vazio-icone">{{ icone('busca') }}</span><h2 class="texto-ui">Ainda não encontramos</h2><p class="texto-ui">Tente outra palavra ou escolha outra atividade.</p><a class="botao principal" href="{{ url_for('profissionais') }}" aria-label="Ver todos os serviços">{{ icone('grade') }}<span class="texto-ui">Ver todos os serviços</span></a><button type="button" class="botao suave" aria-label="Ouvir resultado da busca" data-falar="Não encontrei perfis nesta busca. Toque nos quatro quadradinhos para ver todas as atividades.">{{ icone('som') }}</button></div>
+{% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,3 @@
+{% extends 'base.html' %}
+{% from 'componentes.html' import icone %}
+{% block conteudo %}<div class="vazio"><h1 class="titulo-pagina">Vamos tentar de novo?</h1><p class="texto-ui">{{ mensagem }}</p><a class="botao principal" href="{{ url_for('inicio') }}" aria-label="Voltar ao início">{{ icone('casa') }}<span class="texto-ui">Voltar ao início</span></a></div>{% endblock %}

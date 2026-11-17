@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% from 'componentes.html' import icone, categoria_card %}
+{% block conteudo %}
+<section class="apresentacao">
+  <div class="introducao texto-ui">
+    <span class="sobretitulo">FEITO PARA QUEM FAZ</span>
+    <h1>Seu trabalho.<br> Sua voz. <em>Sua cidade.</em></h1>
+    <p class="texto-desktop">Aqui, quem precisa encontra quem sabe fazer.<br>Valorize o trabalho de quem está perto de você.</p>
+  </div>
+  <div class="acoes-principais">
+    <a aria-label="Mostrar meu trabalho" class="acao grande-verde" href="{{ url_for('cadastro') }}">
+      <span class="acao-icone">{{ icone('falar') }}</span>
+      <span class="texto-ui"><strong>Mostrar meu trabalho</strong><small>Conte o que você faz por áudio</small></span>
+      {{ icone('seta') }}
+    </a>
+    <a aria-label="Procurar um serviço" class="acao grande-azul" href="{{ url_for('profissionais') }}">
+      <span class="acao-icone">{{ icone('buscar-pessoa') }}</span>
+      <span class="texto-ui"><strong>Procurar um serviço</strong><small>Encontre alguém em Batalha</small></span>
+      {{ icone('seta') }}
+    </a>
+  </div>
+</section>
+<div class="explicar-acoes apenas-icones">
+  <button type="button" class="botao suave" data-falar="O botão verde com a pessoa falando abre seu cadastro para mostrar seu trabalho. Toque nele e depois no microfone grande para responder às perguntas falando." aria-label="Ouvir como mostrar meu trabalho">{{ icone('falar') }}{{ icone('som') }}</button>
+  <button type="button" class="botao suave" data-falar="O botão azul com pessoas e uma lupa mostra os trabalhadores. As fotos abaixo procuram por atividade. O alto-falante amarelo ao lado de cada foto diz o nome da atividade. Estas fotos representam as atividades, não os profissionais cadastrados." aria-label="Ouvir como procurar serviços">{{ icone('buscar-pessoa') }}{{ icone('som') }}</button>
+</div>
+<section class="secao-categorias" aria-labelledby="titulo-categorias">
+  <div class="linha-titulo texto-ui"><h2 id="titulo-categorias">O que você procura?</h2><span class="texto-desktop">Escolha uma atividade para começar</span></div>
+  <div class="grade-categorias">{% for categoria in categorias %}{{ categoria_card(categoria) }}{% endfor %}</div>
+  {% if categorias|selectattr("imagem_ia")|list %}<p class="nota texto-ui">Imagens de exemplo geradas por IA para representar as atividades.</p>{% endif %}
+</section>
+<div class="faixa-ajuda">
+  <a class="botao ajuda" href="{{ url_for('ajuda') }}">{{ icone('ajuda') }} <span class="texto-ui">Preciso de ajuda</span></a>
+  <button class="botao instalar" type="button" id="instalar-app" aria-label="Usar no celular">{{ icone('celular') }} <span class="texto-ui">Usar no celular</span></button>
+</div>
+<dialog id="dialog-instalar" aria-labelledby="titulo-instalar">
+  <h2 class="texto-ui" id="titulo-instalar">Leve o Conecta com você</h2>
+  <p class="texto-ui">No Android, abra o menu do navegador e procure <strong>Instalar aplicativo</strong> ou <strong>Adicionar à tela inicial</strong>.</p>
+  <p class="texto-ui">No iPhone, abra no Safari, toque em <strong>Compartilhar</strong> e em <strong>Adicionar à Tela de Início</strong>.</p>
+  <p class="aviso texto-ui" id="aviso-instalacao">A instalação completa precisa de um endereço HTTPS. No computador de desenvolvimento, localhost também funciona.</p>
+  <button type="button" class="botao principal" id="fechar-instalar" aria-label="Fechar instruções">{{ icone('check') }}<span class="texto-ui">Entendi</span></button>
+</dialog>
+{% endblock %}

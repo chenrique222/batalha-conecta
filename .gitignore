@@ -1,0 +1,9 @@
+.venv/
+.venv-312-x64/
+instance/
+__pycache__/
+*.pyc
+.env
+.DS_Store
+.venv-v04/
+node_modules/

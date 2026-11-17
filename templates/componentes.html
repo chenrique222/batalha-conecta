@@ -1,0 +1,32 @@
+{% macro icone(nome, classe='') -%}
+<svg class="icone {{ classe }}" aria-hidden="true" focusable="false"><use href="{{ url_for('static', filename='icons.svg') }}#{{ nome }}"></use></svg>
+{%- endmacro %}
+
+{% macro categoria_card(categoria, selecionada='') -%}
+<div class="categoria-grupo"><a aria-label="{{ categoria.nome }}" class="categoria-card {{ categoria.id }}" href="{{ url_for('profissionais', categoria=categoria.id) }}">
+  <img src="{{ url_for('static', filename='artes/' + categoria.imagem) }}" alt="" width="300" height="180">
+  <strong class="texto-ui">{{ categoria.nome }}</strong>
+  <span class="categoria-exemplo texto-ui">{{ categoria.exemplo }}</span>
+</a>
+<button type="button" class="ouvir-categoria" data-falar="{{ categoria.nome }}. {{ categoria.exemplo }}. Toque na figura para ver os perfis." aria-label="Ouvir atividade: {{ categoria.nome }}">{{ icone('som') }}</button></div>
+{%- endmacro %}
+
+{% macro foto_profissional(pessoa, categorias_por_id) -%}
+{% if pessoa.foto %}
+<img class="foto-profissional" src="{{ url_for('upload', nome=pessoa.foto) }}" alt="Trabalho apresentado por {{ pessoa.nome }}" loading="lazy">
+{% else %}
+<img class="foto-profissional ilustracao" src="{{ url_for('static', filename='artes/' + categorias_por_id[pessoa.categoria].imagem) }}" alt="{{ 'Imagem de exemplo gerada por IA' if categorias_por_id[pessoa.categoria].imagem_ia else 'Imagem de exemplo da atividade' }}: {{ categorias_por_id[pessoa.categoria].nome }}. Não é a foto deste profissional." loading="lazy">
+{% endif %}
+{%- endmacro %}
+
+{% macro seletor_fotos(identificador, formulario, existentes=0) %}
+<div class="seletor-fotos" id="{{ identificador }}" data-seletor-fotos data-formulario="{{ formulario }}" data-existentes="{{ existentes }}">
+  <div class="linha-titulo"><h3 class="texto-ui">Fotos do trabalho</h3><span data-contagem-fotos aria-live="polite">0 / 5</span></div>
+  <label class="botao contorno adicionar-fotos" for="{{ identificador }}-arquivo" aria-label="Adicionar fotos do trabalho">{{ icone('camera') }}<span class="texto-ui">Adicionar fotos</span></label>
+  <input class="entrada-fotos" id="{{ identificador }}-arquivo" type="file" name="fotos" form="{{ formulario }}" accept="image/jpeg,image/png,image/webp" multiple aria-label="Escolher até cinco fotos">
+  <button type="button" class="botao suave" data-falar="Você pode adicionar até cinco fotos do seu trabalho. Toque na câmera para escolher as fotos. Toque no xis de uma miniatura para tirar uma foto da seleção. A primeira foto será a capa." aria-label="Ouvir como adicionar fotos">{{ icone('som') }}</button>
+  <p class="nota">Até 5 fotos, com 5 MB por foto. JPG, PNG ou WebP. A primeira será a capa.</p>
+  <p data-erros-fotos class="erros texto-ui" role="alert" hidden></p>
+  <div class="previas-fotos" data-previas-fotos></div>
+</div>
+{% endmacro %}

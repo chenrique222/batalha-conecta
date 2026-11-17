@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% from 'componentes.html' import icone, foto_profissional, seletor_fotos %}
+{% block titulo %}{{ pessoa.nome }} · Batalha Conecta{% endblock %}
+{% block conteudo %}
+<a class="voltar" href="{{ url_for('profissionais', categoria=pessoa.categoria) }}">{{ icone('voltar') }} <span class="texto-ui">{{ categorias_por_id[pessoa.categoria].nome }}</span></a>
+{% if publicado %}<div class="sucesso" role="status">{{ icone('check') }} <span class="texto-ui">Seu trabalho já aparece na vitrine desta instalação.</span></div>{% endif %}
+<article class="perfil-completo">
+  <div class="perfil-visual" id="galeria">
+    {{ foto_profissional(pessoa, categorias_por_id) }}
+    <span class="legenda-foto">{{ 'Foto de capa do trabalho' if pessoa.foto else ('Imagem de exemplo gerada por IA · não é a foto deste profissional' if categorias_por_id[pessoa.categoria].imagem_ia else 'Imagem de exemplo da atividade · não é a foto deste profissional') }}</span>
+    {% if fotos %}
+    <div class="galeria-fotos" aria-label="Fotos do trabalho">
+      {% for foto in fotos %}<button type="button" data-ampliar-foto="{{ url_for('upload', nome=foto.arquivo) }}" aria-label="Ampliar foto {{ loop.index }} de {{ fotos|length }}"><img src="{{ url_for('upload', nome=foto.arquivo) }}" alt="Foto {{ loop.index }} do trabalho" loading="lazy"></button>{% endfor %}
+    </div>
+    <dialog id="foto-ampliada" class="foto-ampliada" aria-label="Fotos ampliadas do trabalho">
+      <button type="button" class="botao contorno" data-fechar-foto aria-label="Fechar foto">{{ icone('fechar') }}</button>
+      <img src="{{ url_for('upload', nome=fotos[0].arquivo) }}" alt="Foto ampliada do trabalho">
+      <div class="voz-controles"><button type="button" class="botao suave" data-foto-anterior aria-label="Foto anterior">{{ icone('voltar') }}</button><span data-posicao-foto aria-live="polite">1 / {{ fotos|length }}</span><button type="button" class="botao suave" data-foto-proxima aria-label="Próxima foto">{{ icone('seta') }}</button></div>
+    </dialog>
+    {% endif %}
+    {% if pode_editar %}
+    <details class="editar-galeria">
+      <summary class="botao contorno" aria-label="Gerenciar minhas fotos">{{ icone('camera') }}<span class="texto-ui">Gerenciar minhas fotos</span></summary>
+      <form id="form-fotos" method="post" enctype="multipart/form-data" action="{{ url_for('editar_fotos', identificador=pessoa.id) }}">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <div class="fotos-existentes">
+          {% for foto in fotos %}<label><img src="{{ url_for('upload', nome=foto.arquivo) }}" alt="Foto {{ loop.index }}"><span>{{ icone('fechar') }}<input type="checkbox" name="remover" value="{{ foto.id }}" aria-label="Marcar foto {{ loop.index }} para remover"><span class="texto-ui">Remover</span></span></label>{% endfor %}
+        </div>
+        {{ seletor_fotos('galeria-edicao', 'form-fotos', fotos|length) }}
+        <button class="botao principal" type="submit" aria-label="Salvar alterações nas fotos">{{ icone('check') }}<span class="texto-ui">Salvar fotos</span></button>
+        <p class="nota">A edição fica disponível neste navegador enquanto a sessão estiver ativa.</p>
+      </form>
+    </details>
+    {% endif %}
+  </div>
+  <div class="perfil-info">
+    <span class="etiqueta">{{ categorias_por_id[pessoa.categoria].nome }}</span>
+    <h1 class="titulo-pagina">{{ pessoa.nome }}</h1>
+    <p class="local-perfil texto-ui">{{ icone('local') }} {{ pessoa.comunidade }} · Batalha, PI</p>
+    {% if pessoa.demonstracao %}<p class="aviso texto-ui">Este perfil é um exemplo fictício. Não realiza atendimentos.</p>{% endif %}
+    <section class="apresentacao-perfil" aria-labelledby="titulo-apresentacao">
+      <h2 class="texto-ui" id="titulo-apresentacao">Conheça meu trabalho</h2>
+      {% if pessoa.descricao %}<p class="descricao">{{ pessoa.descricao }}</p>{% endif %}
+      {% if pessoa.audio %}
+      <label class="texto-ui" for="audio-apresentacao">Minha apresentação em áudio</label>
+      <audio id="audio-apresentacao" controls preload="metadata" src="{{ url_for('upload', nome=pessoa.audio) }}">Seu navegador não reproduz este áudio.</audio>
+      {% elif pessoa.descricao %}
+      <button class="botao suave" type="button" data-falar="{{ pessoa.nome }}. {{ pessoa.descricao }}">{{ icone('som') }} <span class="texto-ui">Ouvir descrição</span></button>
+      <small class="nota">Leitura em voz alta pelo aplicativo.</small>
+      {% endif %}
+    </section>
+    <button class="botao suave apenas-icones" type="button" data-falar="{{ 'O botão verde com o símbolo do WhatsApp abre uma conversa neste número. O desenho de telefone faz uma ligação. O número foi informado no cadastro e ainda não foi verificado.' if pessoa.telefone else 'Este perfil não tem telefone cadastrado. Os perfis iniciais são exemplos para a turma.' }}" aria-label="Ouvir como entrar em contato">{{ icone('som') }}</button>
+    <section class="contatos" aria-labelledby="titulo-contato">
+      <h2 class="texto-ui" id="titulo-contato">Vamos conversar?</h2>
+      {% if pessoa.telefone %}
+      <a class="botao principal botao-whatsapp" href="https://wa.me/55{{ pessoa.telefone }}" target="_blank" rel="noopener noreferrer" aria-label="Conversar no WhatsApp">{{ icone('whatsapp') }} <span class="texto-ui">Conversar no WhatsApp</span></a>
+      <a class="botao contorno" href="tel:+55{{ pessoa.telefone }}" aria-label="Fazer uma ligação">{{ icone('telefone') }} <span class="texto-ui">Fazer uma ligação</span></a>
+      <small class="nota">O WhatsApp ou o telefone do seu aparelho será aberto.</small>
+      {% else %}
+      <p class="aviso texto-ui">{{ 'Os contatos ficam desativados nos exemplos.' if pessoa.demonstracao else 'Este perfil ainda não informou um telefone.' }}</p>
+      {% endif %}
+    </section>
+  </div>
+</article>
+
+<section class="avaliacoes" id="avaliacoes" aria-labelledby="titulo-avaliacoes">
+  <div class="linha-titulo"><h2 id="titulo-avaliacoes" class="texto-ui">Quem contratou conta</h2>
+  <button type="button" class="botao suave" aria-label="Ouvir as orientações das avaliações" data-falar="{{ 'Este perfil tem ' ~ avaliacoes.total ~ ' avaliações. ' }}Ouça as experiências no botão de tocar de cada comentário. Para avaliar, escolha de uma a cinco estrelas. Uma é ruim e cinco é excelente. Toque no microfone e conte se o trabalho foi bem feito e se valeu a pena. Toque no quadrado para parar. Ouça sua gravação e toque na marca de confirmação para publicá-la. Sua voz ficará disponível neste perfil.">{{ icone('som') }}</button></div>
+  {% if avaliacoes.total %}<p class="media-avaliacoes" aria-label="Média {{ '%.1f'|format(avaliacoes.media) }} de cinco, {{ avaliacoes.total }} avaliações">{{ icone('estrela') }} <strong>{{ '%.1f'|format(avaliacoes.media) }} / 5</strong> <span class="texto-ui">· {{ avaliacoes.total }} avaliações</span></p>{% endif %}
+  <div class="lista-avaliacoes">
+    {% for avaliacao in avaliacoes.itens %}
+    <article class="avaliacao-card">
+      <div class="linha-titulo"><h3 class="texto-ui">{{ avaliacao.nome }}</h3><span class="estrelas-publicadas" aria-label="{{ avaliacao.nota }} de cinco estrelas">{% for numero in range(5) %}<span {% if numero < avaliacao.nota %}class="preenchida"{% endif %}>{{ icone('estrela') }}</span>{% endfor %}</span></div>
+      <p class="nota">Comentário de visitante · experiência não verificada</p>
+      <audio controls preload="none" src="{{ url_for('upload', nome=avaliacao.audio) }}" aria-label="Ouvir avaliação de {{ avaliacao.nome }}"></audio>
+    </article>
+    {% else %}<p class="aviso texto-ui">Ainda não há avaliações. Já contratou este serviço? Conte como foi.</p>{% endfor %}
+  </div>
+  <nav class="voz-controles" aria-label="Páginas das avaliações">
+    {% if pagina > 1 %}<a class="botao contorno" href="{{ url_for('perfil', identificador=pessoa.id, pagina=pagina-1) }}#avaliacoes" aria-label="Avaliações mais recentes">{{ icone('voltar') }}<span class="texto-ui">Mais recentes</span></a>{% endif %}
+    {% if pagina * 10 < avaliacoes.total %}<a class="botao contorno" href="{{ url_for('perfil', identificador=pessoa.id, pagina=pagina+1) }}#avaliacoes" aria-label="Avaliações anteriores"><span class="texto-ui">Anteriores</span>{{ icone('seta') }}</a>{% endif %}
+  </nav>
+  <form id="form-avaliacao" class="painel-avaliacao" method="post" enctype="multipart/form-data" action="{{ url_for('avaliar', identificador=pessoa.id) }}">
+    <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="envio_id" value="{{ avaliacao_envio }}">
+    <h3 class="texto-ui">Como foi o serviço?</h3>
+    <p class="texto-ui">Foi bem feito? Valeu a pena? Você contrataria novamente?</p>
+    <div class="notas-avaliacao" role="group" aria-label="Escolha de uma a cinco estrelas">
+      {% for numero, rotulo in [(1,'Ruim'),(2,'Poderia melhorar'),(3,'Regular'),(4,'Bom'),(5,'Excelente')] %}
+      <label title="{{ rotulo }}"><input type="radio" name="nota" value="{{ numero }}" aria-label="{{ numero }} estrelas, {{ rotulo }}" required><span>{{ icone('estrela') }}<span>{{ numero }}</span><small class="texto-ui">{{ rotulo }}</small></span></label>
+      {% endfor %}
+    </div>
+    <div class="apenas-texto"><label for="avaliacao-nome">Seu nome <span class="opcional">opcional</span></label><input id="avaliacao-nome" name="nome" maxlength="80" placeholder="Pode deixar vazio" autocomplete="name"></div>
+    <div class="voz-controles">
+      <button type="button" id="avaliacao-gravar" class="botao principal" aria-label="Gravar avaliação" aria-pressed="false">{{ icone('microfone') }}<span class="texto-ui">Gravar avaliação</span></button>
+      <button type="button" id="avaliacao-parar" class="botao contorno" aria-label="Terminar gravação" hidden>{{ icone('parar') }}<span class="texto-ui">Terminei</span></button>
+      <label for="avaliacao-arquivo" class="botao suave" aria-label="Escolher uma avaliação em áudio do aparelho">{{ icone('celular') }}<span class="texto-ui">Escolher áudio</span></label>
+    </div>
+    <input type="file" id="avaliacao-arquivo" name="audio" class="entrada-fotos" accept="audio/*,.m4a,.webm,.ogg,.wav,.mp3">
+    <p id="avaliacao-status" class="texto-ui" role="status">Grave até 2 minutos ou escolha um áudio de até 10 MB.</p>
+    <div id="avaliacao-tempo" class="tempo-gravacao" aria-live="off" hidden><span class="ponto-gravacao"></span><span data-tempo>0:00 / 2:00</span></div>
+    <audio id="avaliacao-previa" controls hidden aria-label="Conferir minha avaliação antes de publicar"></audio>
+    <button type="button" id="avaliacao-refazer" class="botao contorno" aria-label="Descartar áudio e gravar novamente" hidden>{{ icone('repetir') }}<span class="texto-ui">Gravar novamente</span></button>
+    <p class="nota">Ao publicar, você autoriza que outras pessoas ouçam sua voz neste perfil.</p>
+    <button type="submit" id="avaliacao-publicar" class="botao principal" aria-label="Autorizar e publicar minha avaliação em áudio" disabled>{{ icone('check') }}<span class="texto-ui">Autorizar e publicar avaliação</span></button>
+    <div id="avaliacao-erro" class="erros texto-ui" role="alert" hidden></div>
+  </form>
+</section>
+{% endblock %}

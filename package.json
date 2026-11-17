@@ -1,0 +1,1 @@
+{"private":true,"scripts":{"test:voz":"node --test tests/test_voz.cjs tests/test_escuta.cjs"},"devDependencies":{"jsdom":"26.1.0"}}

@@ -1,0 +1,73 @@
+{% from 'componentes.html' import icone %}
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#253d63">
+  <meta name="csrf-token" content="{{ csrf }}">
+  <meta name="description" content="Encontre trabalhadores de Batalha e mostre seu trabalho com fotos e voz.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Batalha Conecta">
+  <title>{% block titulo %}Batalha Conecta{% endblock %}</title>
+  <script src="{{ url_for('static', filename='modo.js') }}"></script>
+  <link rel="manifest" href="{{ url_for('manifest') }}">
+  <link rel="icon" href="{{ url_for('static', filename='favicon-mapa.ico') }}" sizes="16x16 32x32 48x48">
+  <link rel="icon" href="{{ url_for('static', filename='favicon-mapa.svg') }}" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='icon-mapa-192.png') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='estilo.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='visual-acessivel.css') }}">
+  <script src="{{ url_for('static', filename='voz-audio.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='galeria.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='acessibilidade.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='voz-logica.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='escuta.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='cadastro-voz.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='avaliacoes.js') }}" defer></script>
+</head>
+<body>
+<a class="pular" href="#conteudo">Pular para o conteúdo</a>
+<div class="casca">
+  <header class="cabecalho">
+    <a class="marca" href="{{ url_for('inicio') }}" aria-label="Batalha Conecta, início">
+      {# O PNG original é preservado. A janela só elimina o espaço transparente na apresentação. #}
+      <svg class="marca-logo-completa" viewBox="70 248 1908 656" width="250" height="86" aria-hidden="true" focusable="false">
+        <image href="{{ url_for('static', filename='artes/batalha-conecta-logo-completa.png') }}" width="2048" height="1152" />
+      </svg>
+      <small class="marca-frase texto-ui">Valorizando o serviço da nossa gente</small>
+    </a>
+    <span class="local texto-ui">{{ icone('local') }} Batalha · PI</span>
+    <nav class="nav-desktop" aria-label="Navegação principal">
+      <a href="{{ url_for('inicio') }}" aria-label="Início" {% if ativo == 'inicio' %}aria-current="page"{% endif %}>{{ icone('casa') }}<span class="texto-ui">Início</span></a>
+      <a href="{{ url_for('profissionais') }}" aria-label="Encontrar serviços" {% if ativo == 'buscar' %}aria-current="page"{% endif %}>{{ icone('busca') }}<span class="texto-ui">Encontrar serviços</span></a>
+      <a href="{{ url_for('cadastro') }}" aria-label="Mostrar meu trabalho" {% if ativo == 'cadastro' %}aria-current="page"{% endif %}>{{ icone('loja') }}<span class="texto-ui">Mostrar meu trabalho</span></a>
+    </nav>
+  </header>
+  <main id="conteudo">
+    <div class="barra-modos">
+      <button type="button" class="switch-modo" id="alternar-modo" role="switch" aria-checked="false" aria-label="Modo imagens e voz" aria-describedby="ajuda-modo">
+        <span class="switch-opcao switch-texto" aria-hidden="true">{{ icone('texto') }}<span class="texto-ui">Textos</span></span>
+        <span class="switch-trilho" aria-hidden="true"><span class="switch-bolinha"></span></span>
+        <span class="switch-opcao switch-imagens" aria-hidden="true">{{ icone('falar') }}<span class="texto-ui">Imagens e voz</span></span>
+      </button>
+      <span id="ajuda-modo" class="sr-only">Desligado: textos e imagens. Ligado: imagens e orientação por voz. Toque para alternar; no teclado, use Espaço ou Enter.</span>
+      <button class="botao-ouvir" type="button" data-falar="{{ fala }}" aria-label="Ouvir esta tela">{{ icone('som') }} <span class="texto-ui">Ouvir esta tela</span></button>
+    </div>
+    <p id="status-voz" class="status-voz texto-ui" role="status" aria-live="polite" hidden></p>
+    {% block conteudo %}{% endblock %}
+  </main>
+  <footer class="rodape texto-ui">
+    <p>Sua voz conecta seu trabalho.</p>
+    <span>Projeto escolar · Desenvolvimento de Sistemas</span>
+    <small>Versão de testes · Os quatro perfis iniciais são fictícios.</small>
+  </footer>
+</div>
+<nav class="nav-mobile" aria-label="Navegação do celular">
+  <a href="{{ url_for('inicio') }}" aria-label="Início" {% if ativo == 'inicio' %}aria-current="page"{% endif %}>{{ icone('casa') }}<span class="texto-ui">Início</span></a>
+  <a href="{{ url_for('profissionais') }}" aria-label="Procurar" {% if ativo == 'buscar' %}aria-current="page"{% endif %}>{{ icone('busca') }}<span class="texto-ui">Procurar</span></a>
+  <a href="{{ url_for('cadastro') }}" aria-label="Meu trabalho" {% if ativo == 'cadastro' %}aria-current="page"{% endif %}>{{ icone('loja') }}<span class="texto-ui">Meu trabalho</span></a>
+  <a href="{{ url_for('ajuda') }}" aria-label="Ajuda" {% if ativo == 'ajuda' %}aria-current="page"{% endif %}>{{ icone('ajuda') }}<span class="texto-ui">Ajuda</span></a>
+</nav>
+</body>
+</html>
