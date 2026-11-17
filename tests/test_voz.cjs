@@ -16,7 +16,7 @@ test("não adivinha telefone incompleto ou ambíguo", () => {
 test("confere uma categoria por vez", () => {
   assert.equal(voz.categoriaFalado("faço bolos"), "alimentacao");
   assert.equal(voz.categoriaFalado("artesanato"), "artesanato");
-  assert.equal(voz.categoriaFalado("farinha de mandioca"), "rural");
+  assert.equal(voz.categoriaFalado("farinha de mandioca"), "alimentacao", "farinha agora fica em Bolos e comidas");
   assert.equal(voz.categoriaFalado("trabalho rural"), "");
   assert.equal(voz.categoriaFalado("sou pedreiro"), "manutencao");
   assert.equal(voz.categoriaFalado("serviços de manutenção"), "manutencao");

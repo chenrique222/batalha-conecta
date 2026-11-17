@@ -41,6 +41,10 @@ Agora o aplicativo repete o que anotou e já faz a próxima pergunta: "Anotei: D
 
 Sem o assistente de IA (reconhecimento do navegador, que erra mais), a confirmação de cada resposta continua como antes.
 
+## Atividades
+
+A atividade **Farinha e derivados** foi retirada. Agora são quatro: Bolos e comidas, Artesanato, Serviços de manutenção e Outros serviços. Quem estava cadastrado em Farinha e derivados passa automaticamente para **Bolos e comidas**, que agora cita "farinha e goma" na explicação; nenhum perfil, foto ou avaliação se perde. No cadastro falado, dizer "farinha", "goma", "tapioca" ou "beiju" escolhe Bolos e comidas.
+
 ## Cores
 
 A paleta foi refeita a partir da logo: azul-marinho e verde, com âmbar para "ouvir" e terracota para "parar". O cabeçalho virou uma faixa azul-marinho que integra a logo. No modo Imagens e voz, as ações mantêm os mesmos significados (verde = falar, azul = procurar, âmbar = ouvir, terracota = parar), agora em tons que combinam; os cartões de atividade e o menu deixaram de ter uma cor cada. Detalhes em `GUIA_PERSONALIZACAO.md`, seção 7.

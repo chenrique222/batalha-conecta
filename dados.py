@@ -8,16 +8,15 @@ import unicodedata
 import re
 
 CATEGORIAS = [
-    {"id": "alimentacao", "nome": "Bolos e comidas", "exemplo": "Bolos, doces e refeições", "imagem": "alimentacao-ia.png", "imagem_ia": True},
+    {"id": "alimentacao", "nome": "Bolos e comidas", "exemplo": "Bolos, doces, refeições, farinha e goma", "imagem": "alimentacao-ia.png", "imagem_ia": True},
     {"id": "artesanato", "nome": "Artesanato", "exemplo": "Peças feitas à mão", "imagem": "artesanato-ia.png", "imagem_ia": True},
-    {"id": "rural", "nome": "Farinha e derivados", "exemplo": "Farinha, goma e tapioca de mandioca", "imagem": "rural-ia.png", "imagem_ia": True},
     {"id": "manutencao", "nome": "Serviços de manutenção", "exemplo": "Pedreiro, pintura, elétrica e encanamento", "imagem": "manutencao-ia.png", "imagem_ia": True},
     {"id": "servicos", "nome": "Outros serviços", "exemplo": "Atividades que não se encaixam nas outras categorias", "imagem": "outros-servicos-ia.png", "imagem_ia": True},
 ]
 
 EXEMPLOS = [
     ("Artes da Rosa", "artesanato", "Faço cestas e peças de artesanato por encomenda. Conte sua ideia e combinamos os detalhes.", "Centro"),
-    ("Farinha do Seu João", "rural", "Produzo farinha de mandioca. Entre em contato para combinar quantidade e retirada.", "Comunidade rural"),
+    ("Farinha do Seu João", "alimentacao", "Produzo farinha de mandioca. Entre em contato para combinar quantidade e retirada.", "Comunidade rural"),
     ("Seu Antônio · Pedreiro", "manutencao", "Faço reformas e pequenos reparos. Podemos conversar sobre o serviço antes de combinar o valor.", "Batalha"),
     ("Bolos da Maria", "alimentacao", "Faço bolos caseiros por encomenda. Consulte sabores e disponibilidade para a sua data.", "Centro"),
 ]
@@ -107,6 +106,10 @@ def preparar_banco(caminho):
                     if nova != perfil["categoria"]:
                         conexao.execute("UPDATE profissionais SET categoria = ? WHERE id = ?", (nova, perfil["id"]))
                 conexao.execute("INSERT INTO migracoes (nome) VALUES ('categorias-v06')")
+            # Versão 0.7: "Farinha e derivados" deixou de existir. Farinha, goma e tapioca são comidas.
+            if not conexao.execute("SELECT 1 FROM migracoes WHERE nome = 'categorias-v07'").fetchone():
+                conexao.execute("UPDATE profissionais SET categoria = 'alimentacao' WHERE categoria = 'rural'")
+                conexao.execute("INSERT INTO migracoes (nome) VALUES ('categorias-v07')")
     finally:
         conexao.close()
 

@@ -50,7 +50,7 @@ class AgenteSimulado(AgenteIA):
         if campo == "nome" and normal.startswith("meu nome e "):
             return {**vazio, "intencao": "responder", "valor": fala[len("Meu nome é "):].rstrip(".")}
         if campo == "categoria":
-            return {**vazio, "intencao": "responder", "valor": "rural" if "beiju" in normal else "nenhuma"}
+            return {**vazio, "intencao": "responder", "valor": "alimentacao" if "beiju" in normal else "nenhuma"}
         if campo == "telefone":
             if "nao tenho" in normal:
                 return {**vazio, "intencao": "pular"}

@@ -217,7 +217,8 @@ def create_app(configuracao=None):
         avaliacoes = buscar_avaliacoes(caminho_banco, identificador, pagina)
         aviso_imagem = ""
         if not pessoa["foto"]:
-            categoria_imagem = next(item for item in CATEGORIAS if item["id"] == pessoa["categoria"])
+            # Uma categoria desconhecida (de uma versão antiga) não derruba a página.
+            categoria_imagem = next((item for item in CATEGORIAS if item["id"] == pessoa["categoria"]), CATEGORIAS[-1])
             aviso_imagem = "A imagem é um exemplo gerado por inteligência artificial, não é uma foto deste profissional. " if categoria_imagem.get("imagem_ia") else "A imagem representa a atividade, não é uma foto deste profissional. "
         if pessoa["demonstracao"]:
             aviso_imagem += "Este perfil é fictício, para demonstração. "

@@ -134,7 +134,8 @@ class Entendimento(unittest.TestCase):
         esquema = corpo["response_format"]["json_schema"]["schema"]
         self.assertEqual(sorted(esquema["required"]), sorted(esquema["properties"]))
         self.assertFalse(esquema["additionalProperties"])
-        self.assertIn("rural", corpo["messages"][0]["content"])
+        self.assertIn("alimentacao", corpo["messages"][0]["content"])
+        self.assertNotIn("rural", corpo["messages"][0]["content"], "A categoria retirada não aparece para a IA")
         self.assertEqual(json.loads(corpo["messages"][1]["content"])["transcricao"], "Meu nome é Maria das Dores.")
 
     def test_falas_inventadas_no_silencio_sao_descartadas(self):
@@ -193,7 +194,8 @@ class Conferencia(unittest.TestCase):
 
     def test_valores_seguem_as_regras_do_formulario(self):
         responder = lambda valor: {"intencao": "responder", "valor": valor}
-        self.assertEqual(self.conferir(responder("rural"), "Vendo beiju e goma.", "resposta", "categoria")["valor"], "rural")
+        self.assertEqual(self.conferir(responder("alimentacao"), "Vendo beiju e goma.", "resposta", "categoria")["valor"], "alimentacao")
+        self.assertEqual(self.conferir(responder("rural"), "Vendo beiju e goma.", "resposta", "categoria")["intencao"], "duvida", "Categoria retirada é recusada")
         self.assertEqual(self.conferir(responder("pesca"), "Sou pescador.", "resposta", "categoria")["intencao"], "duvida")
         self.assertEqual(self.conferir(responder("86999812345"), "É 86 99981-2345.", "resposta", "telefone")["valor"], "86999812345")
         self.assertEqual(self.conferir(responder("86999812345"), "É 86 9998.", "resposta", "telefone")["intencao"], "duvida")

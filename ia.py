@@ -287,7 +287,7 @@ class AgenteIA:
             "Como limpar o valor:\n"
             '- nome: só o nome da pessoa ou do trabalho, com iniciais maiúsculas, sem "meu nome é" e sem ponto final.\n'
             f"- categoria: exatamente um destes identificadores:\n{categorias}\n"
-            '  Escolha pelo sentido ("vendo beiju e goma" é "rural"; "conserto geladeira" é "manutencao"). '
+            '  Escolha pelo sentido ("vendo beiju e goma" é "alimentacao"; "conserto geladeira" é "manutencao"). '
             'Se couber em duas ou em nenhuma com clareza, use "duvida" e pergunte qual é a principal.\n'
             "- descricao: as palavras da própria pessoa, em primeira pessoa, sem hesitações, repetições nem a palavra "
             '"terminei". Corrija só pontuação e erros evidentes de transcrição. Não acrescente qualidades, preços ou promessas.\n'

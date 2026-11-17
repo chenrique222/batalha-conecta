@@ -12,7 +12,7 @@ class Categorias(unittest.TestCase):
             preparar_banco(banco)
             c = conectar(banco)
             with c:
-                c.execute("DELETE FROM migracoes WHERE nome='categorias-v06'")
+                c.execute("DELETE FROM migracoes WHERE nome IN ('categorias-v06', 'categorias-v07')")
                 c.execute("UPDATE profissionais SET categoria='servicos' WHERE envio_id='exemplo-3'")
                 c.execute("""INSERT INTO profissionais
                     (nome,categoria,descricao,comunidade,telefone,foto,audio,envio_id)
@@ -30,9 +30,10 @@ class Categorias(unittest.TestCase):
             self.assertEqual(depois, {**antes, "categoria":"manutencao"})
             categorias = dict(c.execute("SELECT envio_id,categoria FROM profissionais"))
             self.assertEqual(categorias['exemplo-3'], 'manutencao')
-            self.assertEqual(categorias['exemplo-2'], 'rural')
+            self.assertEqual(categorias['exemplo-2'], 'alimentacao', 'Farinha e derivados foi retirada (0.7)')
             self.assertEqual(categorias['plantio'], 'servicos')
-            self.assertEqual(categorias['farinha'], 'rural')
+            self.assertEqual(categorias['farinha'], 'alimentacao')
+            self.assertEqual(c.execute("SELECT COUNT(*) FROM profissionais WHERE categoria='rural'").fetchone()[0], 0)
             self.assertEqual(categorias['costura'], 'servicos')
             self.assertEqual(c.execute("SELECT arquivo FROM fotos WHERE profissional_id=?", (identificador,)).fetchone()[0], 'foto.webp')
             self.assertEqual(c.execute("SELECT audio FROM avaliacoes WHERE profissional_id=?", (identificador,)).fetchone()[0], 'avaliacao.ogg')
@@ -47,6 +48,7 @@ class Categorias(unittest.TestCase):
 
     def test_categorias_distintas_e_imagens_presentes(self):
         raiz = Path(__file__).resolve().parents[1]
-        self.assertEqual(len({c['id'] for c in CATEGORIAS}), 5)
+        self.assertEqual(len({c['id'] for c in CATEGORIAS}), 4)
+        self.assertNotIn('rural', {c['id'] for c in CATEGORIAS})
         for categoria in CATEGORIAS:
             self.assertTrue((raiz/'static/artes'/categoria['imagem']).is_file(), categoria['imagem'])

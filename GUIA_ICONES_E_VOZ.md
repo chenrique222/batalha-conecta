@@ -39,7 +39,7 @@ O toque inicial e a permissão do navegador são necessários. Depois deles, o f
 
 Com o assistente de IA ativo, após cada resposta o aplicativo diz **“Anotei…”** e já faz a próxima pergunta; para corrigir, a pessoa diz **“não”** logo em seguida. Sem a IA, o assistente diz **“Entendi… Está certo?”** e a pessoa responde **“sim”** ou **“repetir”**. Nos dois casos, tudo é lido de novo antes de publicar. A atividade também pode ser escolhida por figura.
 
-As atividades são **Bolos e comidas**, **Artesanato**, **Farinha e derivados**, **Serviços de manutenção** e **Outros serviços**. Dizer “pedreiro” seleciona manutenção. Outros serviços recebe atividades que não se encaixam nas demais; a foto de barbearia é só um exemplo. “Trabalho rural” deixou de ser uma opção ampla: o assistente pede uma atividade específica.
+As atividades são **Bolos e comidas** (inclui farinha, goma e tapioca), **Artesanato**, **Serviços de manutenção** e **Outros serviços**. Dizer “pedreiro” seleciona manutenção. Outros serviços recebe atividades que não se encaixam nas demais; a foto de barbearia é só um exemplo. “Trabalho rural” deixou de ser uma opção ampla: o assistente pede uma atividade específica.
 
 Para testar o telefone sem publicar um número, dite DDD e número **um dígito por vez**, confira a leitura e cancele o cadastro no final. “Meia” é interpretado como 6. Números incompletos e trechos que o sistema não entende são recusados; ele pede que a pessoa repita. Não presumimos que o reconhecimento esteja correto.
 
