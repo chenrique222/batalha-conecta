@@ -38,7 +38,7 @@
   <button id="voz-publicar" type="button" class="botao principal" aria-label="Autorizar e publicar meu perfil e contato" hidden>{{ icone('check') }}<span class="texto-ui">Autorizar e publicar</span></button>
   <div id="voz-categorias" class="grade-categorias escolha-categorias" hidden>
     {% for categoria in categorias %}
-    <button type="button" class="categoria-card {{ categoria.id }}" data-categoria-voz="{{ categoria.id }}" aria-label="{{ categoria.nome }}"><img src="{{ url_for('static', filename='artes/' + categoria.imagem) }}" alt="" width="300" height="180"><span class="texto-ui">{{ categoria.nome }}</span></button>
+    <button type="button" class="categoria-card {{ categoria.id }}" data-categoria-voz="{{ categoria.id }}" aria-label="{{ categoria.nome }}"><img src="{{ categoria.imagem_url }}" alt="" width="300" height="180"><span class="texto-ui">{{ categoria.nome }}</span></button>
     {% endfor %}
   </div>
   <button type="button" id="voz-cancelar" class="botao contorno" aria-label="Cancelar a conversa e apagar este rascunho">{{ icone('fechar') }}<span class="texto-ui">Cancelar conversa</span></button>
@@ -59,7 +59,7 @@
   <legend>1. Qual é a sua atividade?</legend>
   <div class="grade-categorias escolha-categorias">
   {% for categoria in categorias %}
-  <label class="categoria-escolha"><input type="radio" name="categoria" value="{{ categoria.id }}" required {% if campos.categoria == categoria.id %}checked{% endif %}><span class="categoria-card {{ categoria.id }}"><img src="{{ url_for('static', filename='artes/' + categoria.imagem) }}" alt="" width="300" height="180"><strong>{{ categoria.nome }}</strong></span></label>
+  <label class="categoria-escolha"><input type="radio" name="categoria" value="{{ categoria.id }}" required {% if campos.categoria == categoria.id %}checked{% endif %}><span class="categoria-card {{ categoria.id }}"><img src="{{ categoria.imagem_url }}" alt="" width="300" height="180"><strong>{{ categoria.nome }}</strong></span></label>
   {% endfor %}
   </div>
 </fieldset>

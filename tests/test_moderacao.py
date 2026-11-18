@@ -1,8 +1,11 @@
 """Página de moderação: senha, bloqueio de tentativas e exclusão de perfis e avaliações."""
+import io
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
+
+from PIL import Image
 
 from app import create_app
 from dados import conectar
@@ -113,6 +116,40 @@ class Moderacao(unittest.TestCase):
         texto = self.cliente.get("/moderacao").get_data(as_text=True)
         self.assertIn("Muitas tentativas", texto)
         self.assertNotIn("Sair da moderação", texto)
+
+    def imagem(self, tamanho=(900, 1200), formato="JPEG"):
+        dados = io.BytesIO()
+        Image.new("RGB", tamanho, (200, 80, 60)).save(dados, formato)
+        dados.seek(0)
+        return dados
+
+    def test_trocar_e_restaurar_capa(self):
+        self.entrar()
+        resposta = self.cliente.post("/moderacao/capa/costura", content_type="multipart/form-data",
+                                     data={"csrf": self.csrf(), "capa": (self.imagem(), "costureira.jpg")})
+        self.assertEqual(resposta.status_code, 302)
+        capa = Path(self.pasta.name) / "capas" / "costura.webp"
+        with Image.open(capa) as salva:
+            self.assertEqual(salva.size, (1200, 800), "Foto em pé vira capa deitada 3:2, cortada pelo centro")
+        inicio = self.cliente.get("/").get_data(as_text=True)
+        self.assertIn("/capas/costura.webp?v=", inicio, "A página inicial usa a capa nova")
+        self.assertEqual(self.cliente.get("/capas/costura.webp").status_code, 200)
+        self.assertIn("Capa trocada na moderação", self.cliente.get("/moderacao").get_data(as_text=True))
+        self.cliente.post("/moderacao/capa/costura/original", data={"csrf": self.csrf()})
+        self.assertFalse(capa.exists())
+        self.assertIn("/static/artes/costura.png", self.cliente.get("/").get_data(as_text=True))
+
+    def test_capa_recusa_arquivo_que_nao_e_imagem_e_exige_senha(self):
+        resposta = self.cliente.post("/moderacao/capa/costura", content_type="multipart/form-data",
+                                     data={"csrf": self.csrf(), "capa": (self.imagem(), "a.jpg")})
+        self.assertEqual(resposta.status_code, 403, "Sem senha, não troca")
+        self.entrar()
+        self.cliente.post("/moderacao/capa/costura", content_type="multipart/form-data",
+                          data={"csrf": self.csrf(), "capa": (io.BytesIO(b"isto nao e imagem"), "virus.jpg")})
+        self.assertIn("Não foi possível ler a imagem", self.cliente.get("/moderacao").get_data(as_text=True))
+        self.assertFalse((Path(self.pasta.name) / "capas" / "costura.webp").exists())
+        self.assertEqual(self.cliente.post("/moderacao/capa/inexistente", data={"csrf": self.csrf()}).status_code, 404)
+        self.assertEqual(self.cliente.get("/capas/..%2Fbatalha.webp").status_code, 404)
 
     def test_sair(self):
         self.entrar()

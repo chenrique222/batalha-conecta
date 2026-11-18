@@ -4,7 +4,7 @@
 
 {% macro categoria_card(categoria, selecionada='') -%}
 <div class="categoria-grupo"><a aria-label="{{ categoria.nome }}" class="categoria-card {{ categoria.id }}" href="{{ url_for('profissionais', categoria=categoria.id) }}">
-  <img src="{{ url_for('static', filename='artes/' + categoria.imagem) }}" alt="" width="300" height="180">
+  <img src="{{ categoria.imagem_url }}" alt="" width="300" height="180">
   <strong class="texto-ui">{{ categoria.nome }}</strong>
   <span class="categoria-exemplo texto-ui">{{ categoria.exemplo }}</span>
 </a>
@@ -15,7 +15,7 @@
 {% if pessoa.foto %}
 <img class="foto-profissional" src="{{ url_for('upload', nome=pessoa.foto) }}" alt="Trabalho apresentado por {{ pessoa.nome }}" loading="lazy">
 {% else %}
-<img class="foto-profissional ilustracao" src="{{ url_for('static', filename='artes/' + categorias_por_id[pessoa.categoria].imagem) }}" alt="{{ 'Imagem de exemplo gerada por IA' if categorias_por_id[pessoa.categoria].imagem_ia else 'Imagem de exemplo da atividade' }}: {{ categorias_por_id[pessoa.categoria].nome }}. Não é a foto deste profissional." loading="lazy">
+<img class="foto-profissional ilustracao" src="{{ categorias_por_id[pessoa.categoria].imagem_url }}" alt="{{ 'Imagem de exemplo gerada por IA' if categorias_por_id[pessoa.categoria].imagem_ia else 'Imagem de exemplo da atividade' }}: {{ categorias_por_id[pessoa.categoria].nome }}. Não é a foto deste profissional." loading="lazy">
 {% endif %}
 {%- endmacro %}
 

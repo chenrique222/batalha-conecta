@@ -24,6 +24,30 @@
     <button class="botao contorno" type="submit">Sair da moderação</button>
   </form>
 
+  <h2 id="capas">Capas das atividades</h2>
+  <p class="moderacao-explica">A imagem é cortada no formato das outras capas (3 por 2), pelo centro. Use JPG, PNG ou WebP de até 8 MB. Use fotos suas ou com autorização de quem aparece nelas.</p>
+  {% if capas_temporarias %}<p class="moderacao-alerta">Neste servidor, as capas trocadas aqui voltam à imagem original quando o site reinicia ou "dorme". Para uma troca permanente, a imagem precisa ser colocada no projeto, no GitHub.</p>{% endif %}
+  <ul class="moderacao-capas">
+  {% for categoria in categorias %}
+    <li>
+      <img src="{{ categoria.imagem_url }}" alt="Capa atual de {{ categoria.nome }}" width="300" height="200">
+      <strong>{{ categoria.nome }}</strong>
+      <span class="moderacao-detalhe">{{ 'Capa trocada na moderação' if categoria.capa_propria else 'Imagem original do projeto' }}</span>
+      <form method="post" action="{{ url_for('moderacao_trocar_capa', identificador=categoria.id) }}" enctype="multipart/form-data">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <label class="moderacao-arquivo">Nova imagem<input type="file" name="capa" accept="image/jpeg,image/png,image/webp" required></label>
+        <button class="botao principal" type="submit">Trocar capa</button>
+      </form>
+      {% if categoria.capa_propria %}
+      <form method="post" action="{{ url_for('moderacao_capa_original', identificador=categoria.id) }}">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <button class="botao contorno" type="submit">Voltar à original</button>
+      </form>
+      {% endif %}
+    </li>
+  {% endfor %}
+  </ul>
+
   <h2>Perfis ({{ perfis|length }})</h2>
   {% if not perfis %}<p>Nenhum perfil publicado.</p>{% endif %}
   <ul class="moderacao-lista">

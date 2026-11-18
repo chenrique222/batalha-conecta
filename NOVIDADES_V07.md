@@ -83,6 +83,8 @@ O site não tem contas. Para tirar do ar um perfil falso ou uma avaliação ofen
 - **Usar:** abra /moderacao, digite a senha, marque **Confirmo** ao lado do que quer tirar e toque em **Apagar perfil** ou **Apagar avaliação**. Apagar um perfil leva junto as fotos, o áudio e as avaliações dele. Não há como desfazer.
 - **Segurança:** a senha nunca vai para o GitHub. Depois de 10 senhas erradas em 10 minutos, a entrada fica fechada por 5 minutos. A sessão de moderação dura 2 horas.
 - Os quatro perfis de exemplo voltam sozinhos quando o site reinicia.
+- **Capas das atividades:** na mesma página, a seção "Capas das atividades" troca a imagem de cada atividade. A imagem enviada é cortada pelo centro no formato 3:2 e salva em `capas/` (dentro da pasta de dados), sem apagar a original; o botão **Voltar à original** desfaz a troca. Use fotos próprias ou com autorização de quem aparece.
+- **Atenção no Render gratuito:** o disco é temporário, então as capas trocadas pela moderação voltam à original quando o site reinicia ou dorme (15 minutos sem uso). A página avisa isso. Para uma troca permanente, a imagem precisa entrar no projeto: substitua o arquivo em `static/artes/` e envie ao GitHub.
 
 ## Como ativar (grátis, sem cartão)
 

@@ -12,7 +12,7 @@
 </form>
 <nav class="filtros" aria-label="Filtrar por atividade">
   <a class="filtro" href="{{ url_for('profissionais', busca=busca) }}" {% if not categoria %}aria-current="true"{% endif %} aria-label="Todas as atividades">{{ icone('grade') }}<span class="texto-ui">Todas</span></a>
-  {% for item in categorias %}<a class="filtro" href="{{ url_for('profissionais', categoria=item.id, busca=busca) }}" {% if categoria == item.id %}aria-current="true"{% endif %} aria-label="{{ item.nome }}"><img class="filtro-imagem" src="{{ url_for('static', filename='artes/' + item.imagem) }}" alt="" width="48" height="40"><span class="texto-ui">{{ item.nome }}</span></a>{% endfor %}
+  {% for item in categorias %}<a class="filtro" href="{{ url_for('profissionais', categoria=item.id, busca=busca) }}" {% if categoria == item.id %}aria-current="true"{% endif %} aria-label="{{ item.nome }}"><img class="filtro-imagem" src="{{ item.imagem_url }}" alt="" width="48" height="40"><span class="texto-ui">{{ item.nome }}</span></a>{% endfor %}
 </nav>
 <p class="contagem" role="status">{{ profissionais|length }} {{ 'perfil encontrado' if profissionais|length == 1 else 'perfis encontrados' }}</p>
 <div class="grade-profissionais">

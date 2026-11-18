@@ -52,6 +52,30 @@ def salvar_foto(arquivo, destino):
         raise ValueError("Não foi possível ler a foto. Escolha uma imagem JPG, PNG ou WebP de até 20 megapixels.")
 
 
+def salvar_capa(arquivo, destino):
+    """Capa de atividade: confere a imagem, corta no formato 3:2 e salva em WebP, sem metadados."""
+    if not arquivo or not arquivo.filename:
+        raise ValueError("Escolha uma imagem para a capa.")
+    if len(arquivo.read(8 * 1024 * 1024 + 1)) > 8 * 1024 * 1024:
+        raise ValueError("A imagem pode ter no máximo 8 MB.")
+    arquivo.stream.seek(0)
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", Image.DecompressionBombWarning)
+            with Image.open(arquivo.stream) as original:
+                if original.format not in {"JPEG", "PNG", "WEBP"}:
+                    raise ValueError("Escolha uma imagem JPG, PNG ou WebP.")
+                imagem = ImageOps.exif_transpose(original).convert("RGB")
+                # Mesmo formato das imagens originais (3:2), cortando pelo centro.
+                imagem = ImageOps.fit(imagem, (1200, 800), Image.LANCZOS, centering=(0.5, 0.45))
+                destino.parent.mkdir(parents=True, exist_ok=True)
+                provisorio = destino.with_suffix(".tmp")
+                imagem.save(provisorio, "WEBP", quality=85)
+                provisorio.replace(destino)
+    except (UnidentifiedImageError, OSError, Image.DecompressionBombError, Image.DecompressionBombWarning):
+        raise ValueError("Não foi possível ler a imagem. Escolha uma JPG, PNG ou WebP de até 20 megapixels.")
+
+
 def extensao_audio(conteudo):
     """Conferimos a assinatura do arquivo; não confiamos apenas na extensão."""
     if conteudo.startswith(b"RIFF") and conteudo[8:12] == b"WAVE":
@@ -110,11 +134,36 @@ def create_app(configuracao=None):
     # Nos testes, a IA só existe se for simulada: nenhuma chave real é usada.
     app.extensions["agente_ia"] = AgenteIA(categorias=CATEGORIAS) if app.config.get("TESTING") else AgenteIA.do_ambiente(categorias=CATEGORIAS)
 
+    pasta_capas = pasta_dados / "capas"
+
+    def categorias_atuais():
+        """As atividades com a capa em uso: a trocada na moderação ou a original do projeto."""
+        lista = []
+        for categoria in CATEGORIAS:
+            item = dict(categoria)
+            capa = pasta_capas / f"{categoria['id']}.webp"
+            if capa.is_file():
+                item["imagem_url"] = url_for("capa_categoria", identificador=categoria["id"], v=int(capa.stat().st_mtime))
+                item["imagem_ia"] = False
+                item["capa_propria"] = True
+            else:
+                item["imagem_url"] = url_for("static", filename="artes/" + categoria["imagem"])
+                item["capa_propria"] = False
+            lista.append(item)
+        return lista
+
+    @app.get("/capas/<identificador>.webp")
+    def capa_categoria(identificador):
+        if identificador not in {categoria["id"] for categoria in CATEGORIAS}:
+            abort(404)
+        return send_from_directory(pasta_capas, f"{identificador}.webp", conditional=True)
+
     @app.context_processor
     def contexto_comum():
         if "csrf" not in session:
             session["csrf"] = secrets.token_hex(32)
-        return {"categorias": CATEGORIAS, "categorias_por_id": {c["id"]: c for c in CATEGORIAS}, "csrf": session["csrf"],
+        atuais = categorias_atuais()
+        return {"categorias": atuais, "categorias_por_id": {c["id"]: c for c in atuais}, "csrf": session["csrf"],
                 "ia_ativa": app.extensions["agente_ia"].ativo}
 
     @app.before_request
@@ -223,7 +272,8 @@ def create_app(configuracao=None):
         aviso_imagem = ""
         if not pessoa["foto"]:
             # Uma categoria desconhecida (de uma versão antiga) não derruba a página.
-            categoria_imagem = next((item for item in CATEGORIAS if item["id"] == pessoa["categoria"]), CATEGORIAS[-1])
+            atuais = categorias_atuais()
+            categoria_imagem = next((item for item in atuais if item["id"] == pessoa["categoria"]), atuais[-1])
             aviso_imagem = "A imagem é um exemplo gerado por inteligência artificial, não é uma foto deste profissional. " if categoria_imagem.get("imagem_ia") else "A imagem representa a atividade, não é uma foto deste profissional. "
         if pessoa["demonstracao"]:
             aviso_imagem += "Este perfil é fictício, para demonstração. "
@@ -450,7 +500,8 @@ def create_app(configuracao=None):
                                    fala="Página de moderação, para o professor. Digite a senha para entrar.")
         return render_template("moderacao.html", entrou=True, aviso=aviso, perfis=listar_para_moderacao(caminho_banco),
                                avaliacoes=listar_avaliacoes_recentes(caminho_banco),
-                               fala="Página de moderação. Para apagar, marque Confirmo e toque em Apagar. O que for apagado não volta.")
+                               capas_temporarias=bool(os.environ.get("RENDER")),
+                               fala="Página de moderação. Aqui você troca as capas das atividades e apaga perfis e avaliações. Para apagar, marque Confirmo e toque em Apagar.")
 
     @app.post("/moderacao/entrar")
     def moderacao_entrar():
@@ -507,6 +558,29 @@ def create_app(configuracao=None):
             remover_arquivos([arquivo])
             session["moderacao_aviso"] = "Avaliação apagada."
         return redirect(url_for("moderacao") + "#avaliacoes")
+
+    @app.post("/moderacao/capa/<identificador>")
+    def moderacao_trocar_capa(identificador):
+        exigir_moderador()
+        categoria = next((item for item in CATEGORIAS if item["id"] == identificador), None)
+        if categoria is None:
+            abort(404)
+        try:
+            salvar_capa(request.files.get("capa"), pasta_capas / f"{identificador}.webp")
+            session["moderacao_aviso"] = f"Capa de \"{categoria['nome']}\" trocada."
+        except ValueError as erro:
+            session["moderacao_aviso"] = str(erro)
+        return redirect(url_for("moderacao") + "#capas")
+
+    @app.post("/moderacao/capa/<identificador>/original")
+    def moderacao_capa_original(identificador):
+        exigir_moderador()
+        categoria = next((item for item in CATEGORIAS if item["id"] == identificador), None)
+        if categoria is None:
+            abort(404)
+        (pasta_capas / f"{identificador}.webp").unlink(missing_ok=True)
+        session["moderacao_aviso"] = f"\"{categoria['nome']}\" voltou à imagem original."
+        return redirect(url_for("moderacao") + "#capas")
 
     @app.errorhandler(400)
     @app.errorhandler(403)
