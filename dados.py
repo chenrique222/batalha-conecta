@@ -232,3 +232,65 @@ def buscar_avaliacoes(caminho, identificador, pagina=1):
         return resumo
     finally:
         conexao.close()
+
+
+# ----- Moderação (página do professor) -----
+
+def listar_para_moderacao(caminho):
+    """Todos os perfis, do mais novo ao mais antigo, com a contagem de fotos e avaliações."""
+    conexao = conectar(caminho)
+    try:
+        registros = conexao.execute("""
+            SELECT p.id, p.nome, p.categoria, p.comunidade, p.telefone, p.descricao, p.demonstracao, p.criado_em,
+                   (SELECT COUNT(*) FROM fotos WHERE profissional_id = p.id) AS fotos,
+                   (SELECT COUNT(*) FROM avaliacoes WHERE profissional_id = p.id) AS avaliacoes
+            FROM profissionais p ORDER BY p.id DESC
+        """).fetchall()
+        return [dict(registro) for registro in registros]
+    finally:
+        conexao.close()
+
+
+def listar_avaliacoes_recentes(caminho, limite=100):
+    conexao = conectar(caminho)
+    try:
+        registros = conexao.execute("""
+            SELECT a.id, a.nome, a.nota, a.audio, a.criado_em, a.profissional_id, p.nome AS perfil
+            FROM avaliacoes a JOIN profissionais p ON p.id = a.profissional_id
+            ORDER BY a.id DESC LIMIT ?
+        """, (limite,)).fetchall()
+        return [dict(registro) for registro in registros]
+    finally:
+        conexao.close()
+
+
+def apagar_profissional(caminho, identificador):
+    """Apaga o perfil, suas fotos e avaliações. Devolve os nomes dos arquivos a remover, ou None."""
+    conexao = conectar(caminho)
+    try:
+        with conexao:
+            pessoa = conexao.execute("SELECT foto, audio FROM profissionais WHERE id = ?", (identificador,)).fetchone()
+            if pessoa is None:
+                return None
+            arquivos = {pessoa["foto"], pessoa["audio"]}
+            arquivos |= {linha[0] for linha in conexao.execute("SELECT arquivo FROM fotos WHERE profissional_id = ?", (identificador,))}
+            arquivos |= {linha[0] for linha in conexao.execute("SELECT audio FROM avaliacoes WHERE profissional_id = ?", (identificador,))}
+            # ON DELETE CASCADE remove as linhas de fotos e avaliações.
+            conexao.execute("DELETE FROM profissionais WHERE id = ?", (identificador,))
+        return sorted(arquivo for arquivo in arquivos if arquivo)
+    finally:
+        conexao.close()
+
+
+def apagar_avaliacao(caminho, identificador):
+    """Apaga uma avaliação. Devolve o nome do arquivo de áudio, ou None se ela não existir."""
+    conexao = conectar(caminho)
+    try:
+        with conexao:
+            avaliacao = conexao.execute("SELECT audio FROM avaliacoes WHERE id = ?", (identificador,)).fetchone()
+            if avaliacao is None:
+                return None
+            conexao.execute("DELETE FROM avaliacoes WHERE id = ?", (identificador,))
+        return avaliacao["audio"]
+    finally:
+        conexao.close()

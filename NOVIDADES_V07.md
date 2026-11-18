@@ -73,6 +73,15 @@ Cuidados:
 - **Qualquer pessoa com o link acessa o site** enquanto a janela estiver aberta. Use dados fictícios e apague `instance-feira` no final.
 - A rede da escola pode bloquear o túnel; o roteador do celular costuma funcionar.
 
+## Moderação (página do professor)
+
+O site não tem contas. Para tirar do ar um perfil falso ou uma avaliação ofensiva, existe a página **/moderacao** (por exemplo, `https://batalha-conecta.onrender.com/moderacao`), protegida por uma senha.
+
+- **Ligar:** crie a variável `BATALHA_MODERACAO_SENHA` com uma senha de pelo menos 8 caracteres. No Render: serviço **batalha-conecta → Environment → Add Environment Variable**. No computador: uma linha no arquivo `.env`. Sem essa variável, a página não existe.
+- **Usar:** abra /moderacao, digite a senha, marque **Confirmo** ao lado do que quer tirar e toque em **Apagar perfil** ou **Apagar avaliação**. Apagar um perfil leva junto as fotos, o áudio e as avaliações dele. Não há como desfazer.
+- **Segurança:** a senha nunca vai para o GitHub. Depois de 10 senhas erradas em 10 minutos, a entrada fica fechada por 5 minutos. A sessão de moderação dura 2 horas.
+- Os quatro perfis de exemplo voltam sozinhos quando o site reinicia.
+
 ## Como ativar (grátis, sem cartão)
 
 1. Abra https://console.groq.com/keys e crie uma conta.

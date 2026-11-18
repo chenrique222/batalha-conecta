@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% from 'componentes.html' import icone %}
+{% block titulo %}Moderação · Batalha Conecta{% endblock %}
+{% block conteudo %}
+<div class="moderacao">
+<h1>Moderação</h1>
+<p class="moderacao-explica">Página do professor. Aqui você apaga perfis e avaliações publicados. O que for apagado não volta.</p>
+{% if aviso %}<p class="moderacao-aviso" role="status">{{ aviso }}</p>{% endif %}
+
+{% if not entrou %}
+  {% if senha_curta %}
+  <p class="erros">A senha da moderação precisa ter pelo menos 8 caracteres. Troque o valor de <code>BATALHA_MODERACAO_SENHA</code> nas configurações do servidor e reinicie.</p>
+  {% else %}
+  <form class="moderacao-entrar" method="post" action="{{ url_for('moderacao_entrar') }}">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label for="senha-moderacao">Senha da moderação</label>
+    <input id="senha-moderacao" name="senha" type="password" autocomplete="current-password" required>
+    <button class="botao principal" type="submit">Entrar</button>
+  </form>
+  {% endif %}
+{% else %}
+  <form class="moderacao-sair" method="post" action="{{ url_for('moderacao_sair') }}">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <button class="botao contorno" type="submit">Sair da moderação</button>
+  </form>
+
+  <h2>Perfis ({{ perfis|length }})</h2>
+  {% if not perfis %}<p>Nenhum perfil publicado.</p>{% endif %}
+  <ul class="moderacao-lista">
+  {% for pessoa in perfis %}
+    <li>
+      <div class="moderacao-dados">
+        <a href="{{ url_for('perfil', identificador=pessoa.id) }}" target="_blank" rel="noopener"><strong>{{ pessoa.nome }}</strong></a>
+        {% if pessoa.demonstracao %}<span class="moderacao-etiqueta">exemplo</span>{% endif %}
+        <span>{{ categorias_por_id[pessoa.categoria].nome if pessoa.categoria in categorias_por_id else pessoa.categoria }} · {{ pessoa.comunidade }}</span>
+        {% if pessoa.descricao %}<span class="moderacao-descricao">{{ pessoa.descricao }}</span>{% endif %}
+        <span class="moderacao-detalhe">Publicado em {{ pessoa.criado_em|data_local }} · {{ pessoa.fotos }} foto(s) · {{ pessoa.avaliacoes }} avaliação(ões){% if pessoa.telefone %} · tel. {{ pessoa.telefone }}{% endif %}</span>
+      </div>
+      <form method="post" action="{{ url_for('moderacao_apagar_perfil', identificador=pessoa.id) }}">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <label class="moderacao-confirmar"><input type="checkbox" name="confirmar" value="sim" required> Confirmo</label>
+        <button class="botao moderacao-apagar" type="submit" aria-label="Apagar o perfil {{ pessoa.nome }}">{{ icone('fechar') }} Apagar perfil</button>
+      </form>
+    </li>
+  {% endfor %}
+  </ul>
+
+  <h2 id="avaliacoes">Avaliações mais recentes ({{ avaliacoes|length }})</h2>
+  {% if not avaliacoes %}<p>Nenhuma avaliação publicada.</p>{% endif %}
+  <ul class="moderacao-lista">
+  {% for avaliacao in avaliacoes %}
+    <li>
+      <div class="moderacao-dados">
+        <strong>{{ avaliacao.nome }} · {{ avaliacao.nota }} estrela(s)</strong>
+        <span>Sobre <a href="{{ url_for('perfil', identificador=avaliacao.profissional_id) }}" target="_blank" rel="noopener">{{ avaliacao.perfil }}</a> · {{ avaliacao.criado_em|data_local }}</span>
+        <audio controls preload="none" src="{{ url_for('upload', nome=avaliacao.audio) }}"></audio>
+      </div>
+      <form method="post" action="{{ url_for('moderacao_apagar_avaliacao', identificador=avaliacao.id) }}">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <label class="moderacao-confirmar"><input type="checkbox" name="confirmar" value="sim" required> Confirmo</label>
+        <button class="botao moderacao-apagar" type="submit" aria-label="Apagar a avaliação de {{ avaliacao.nome }}">{{ icone('fechar') }} Apagar avaliação</button>
+      </form>
+    </li>
+  {% endfor %}
+  </ul>
+{% endif %}
+</div>
+{% endblock %}

@@ -8,6 +8,8 @@ import io
 import os
 import re
 import secrets
+import threading
+import time
 import sqlite3
 import warnings
 from pathlib import Path
@@ -18,6 +20,7 @@ from PIL import Image, ImageOps, UnidentifiedImageError
 
 from dados import CATEGORIAS, buscar_envio, buscar_por_id, buscar_profissionais, cadastrar_profissional, preparar_banco
 from dados import buscar_fotos, atualizar_fotos, buscar_avaliacoes, cadastrar_avaliacao, buscar_avaliacao_envio
+from dados import listar_para_moderacao, listar_avaliacoes_recentes, apagar_profissional, apagar_avaliacao
 from voz import VozNatural, VozIndisponivel, VOZES
 from ia import AgenteIA, IAIndisponivel, CAMPOS, FASES, carregar_env
 
@@ -134,6 +137,8 @@ def create_app(configuracao=None):
         )
         if not request.path.startswith("/static/"):
             resposta.headers["Cache-Control"] = "no-store"
+        if request.path.startswith("/moderacao"):
+            resposta.headers["X-Robots-Tag"] = "noindex, nofollow"
         return resposta
 
     @app.get("/")
@@ -401,6 +406,107 @@ def create_app(configuracao=None):
     @app.get("/sw.js")
     def service_worker():
         return send_from_directory(app.static_folder, "sw.js", mimetype="text/javascript")
+
+    # ----- Moderação: página do professor, protegida por senha -----
+    # A senha vem da variável BATALHA_MODERACAO_SENHA (no Render ou no arquivo .env), nunca do código.
+    # Sem a variável, a página nem existe (404).
+    senha_moderacao = str(app.config.get("MODERACAO_SENHA") or os.environ.get("BATALHA_MODERACAO_SENHA", "")).strip()
+    # Contra quem tenta adivinhar a senha: após 10 erros em 10 minutos, a entrada fica fechada por 5 minutos.
+    tentativas = {"falhas": [], "fechado_ate": 0.0}
+    trava_tentativas = threading.Lock()
+    DURACAO_MODERACAO = 2 * 60 * 60
+
+    def moderador_ativo():
+        return bool(senha_moderacao) and session.get("moderador_ate", 0) > time.time()
+
+    def exigir_moderador():
+        if not senha_moderacao:
+            abort(404)
+        if not moderador_ativo():
+            abort(403, description="Entre com a senha da moderação para continuar.")
+
+    def remover_arquivos(nomes):
+        for nome in nomes:
+            if nome and "/" not in nome and "\\" not in nome:
+                (pasta_uploads / nome).unlink(missing_ok=True)
+
+    @app.template_filter("data_local")
+    def data_local(texto):
+        """O banco guarda a hora universal (UTC). Batalha-PI fica em UTC-3 o ano todo."""
+        from datetime import datetime, timedelta
+        try:
+            momento = datetime.strptime(str(texto), "%Y-%m-%d %H:%M:%S") - timedelta(hours=3)
+        except ValueError:
+            return texto
+        return momento.strftime("%d/%m/%Y às %H:%M")
+
+    @app.get("/moderacao")
+    def moderacao():
+        if not senha_moderacao:
+            abort(404)
+        aviso = session.pop("moderacao_aviso", "")
+        if not moderador_ativo():
+            return render_template("moderacao.html", entrou=False, aviso=aviso, senha_curta=len(senha_moderacao) < 8,
+                                   fala="Página de moderação, para o professor. Digite a senha para entrar.")
+        return render_template("moderacao.html", entrou=True, aviso=aviso, perfis=listar_para_moderacao(caminho_banco),
+                               avaliacoes=listar_avaliacoes_recentes(caminho_banco),
+                               fala="Página de moderação. Para apagar, marque Confirmo e toque em Apagar. O que for apagado não volta.")
+
+    @app.post("/moderacao/entrar")
+    def moderacao_entrar():
+        if not senha_moderacao:
+            abort(404)
+        agora = time.time()
+        with trava_tentativas:
+            if tentativas["fechado_ate"] > agora:
+                session["moderacao_aviso"] = "Muitas tentativas erradas. Espere alguns minutos e tente de novo."
+                return redirect(url_for("moderacao"))
+            senha = request.form.get("senha", "")
+            if len(senha_moderacao) >= 8 and hmac.compare_digest(senha.encode("utf-8"), senha_moderacao.encode("utf-8")):
+                tentativas["falhas"].clear()
+                session["moderador_ate"] = agora + DURACAO_MODERACAO
+                session["csrf"] = secrets.token_hex(32)  # novo código de formulário depois de entrar
+                return redirect(url_for("moderacao"))
+            tentativas["falhas"] = [momento for momento in tentativas["falhas"] if momento > agora - 600] + [agora]
+            if len(tentativas["falhas"]) >= 10:
+                tentativas["fechado_ate"] = agora + 300
+                tentativas["falhas"].clear()
+        session["moderacao_aviso"] = "Senha incorreta."
+        return redirect(url_for("moderacao"))
+
+    @app.post("/moderacao/sair")
+    def moderacao_sair():
+        session.pop("moderador_ate", None)
+        return redirect(url_for("moderacao") if senha_moderacao else url_for("inicio"))
+
+    @app.post("/moderacao/perfil/<int:identificador>/apagar")
+    def moderacao_apagar_perfil(identificador):
+        exigir_moderador()
+        if request.form.get("confirmar") != "sim":
+            session["moderacao_aviso"] = "Marque a caixa de confirmação antes de apagar."
+            return redirect(url_for("moderacao"))
+        pessoa = buscar_por_id(caminho_banco, identificador)
+        arquivos = apagar_profissional(caminho_banco, identificador)
+        if arquivos is None:
+            session["moderacao_aviso"] = "Esse perfil já tinha sido apagado."
+        else:
+            remover_arquivos(arquivos)
+            session["moderacao_aviso"] = f"Perfil \"{pessoa['nome']}\" apagado, com suas fotos e avaliações."
+        return redirect(url_for("moderacao"))
+
+    @app.post("/moderacao/avaliacao/<int:identificador>/apagar")
+    def moderacao_apagar_avaliacao(identificador):
+        exigir_moderador()
+        if request.form.get("confirmar") != "sim":
+            session["moderacao_aviso"] = "Marque a caixa de confirmação antes de apagar."
+            return redirect(url_for("moderacao") + "#avaliacoes")
+        arquivo = apagar_avaliacao(caminho_banco, identificador)
+        if arquivo is None:
+            session["moderacao_aviso"] = "Essa avaliação já tinha sido apagada."
+        else:
+            remover_arquivos([arquivo])
+            session["moderacao_aviso"] = "Avaliação apagada."
+        return redirect(url_for("moderacao") + "#avaliacoes")
 
     @app.errorhandler(400)
     @app.errorhandler(403)

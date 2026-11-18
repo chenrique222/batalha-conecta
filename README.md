@@ -14,6 +14,10 @@ Mural de trabalhadores de Batalha (PI), feito como projeto escolar do curso de D
 
 Comece a leitura por `LEIA_PRIMEIRO.md`. Para a feira, veja a seção "Modo feira" em `NOVIDADES_V07.md`.
 
+## Moderação
+
+Para apagar perfis e avaliações, há a página `/moderacao`, protegida pela senha da variável `BATALHA_MODERACAO_SENHA`. Veja a seção "Moderação" em `NOVIDADES_V07.md`.
+
 ## Segurança
 
 A chave da Groq fica no arquivo `.env`, e os cadastros ficam na pasta `instance`. **Nenhum dos dois vai para o GitHub** (estão no `.gitignore`). Nunca coloque a chave no código.
