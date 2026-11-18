@@ -47,6 +47,12 @@ A atividade **Farinha e derivados** foi retirada e entrou **Corte e costura**, p
 
 A imagem de Corte e costura (`static/artes/costura.png`) é uma **ilustração** feita para o projeto (máquina de costura, tecido, linhas, tesoura e fita métrica), não uma foto. O desenho original está em `costura.svg`, nas cores do site. Pode ser trocada por uma foto de uma costureira de Batalha, com autorização dela (veja `GUIA_PERSONALIZACAO.md`). Quem já estava cadastrado como costureira em Outros serviços continua lá; para mudar, basta fazer um novo cadastro.
 
+## Perfis de exemplo
+
+Agora são 13 perfis fictícios, para o site parecer em uso: 4 em Bolos e comidas, 3 em Artesanato, 2 em Corte e costura, 3 em Serviços de manutenção e 1 em Outros serviços. Eles estão em `EXEMPLOS`, no arquivo `dados.py`, e voltam sozinhos sempre que o site reinicia.
+
+Os telefones são inventados, no padrão (86) 90000-01xx. Como um número inventado pode pertencer a alguém de verdade, nos exemplos o número aparece na tela, mas os botões de WhatsApp e de ligação ficam desligados, com um aviso. Os perfis de exemplo continuam com a marca "Perfil fictício para demonstração".
+
 ## Cores
 
 A paleta foi refeita a partir da logo: azul-marinho e verde, com âmbar para "ouvir" e terracota para "parar". O cabeçalho virou uma faixa azul-marinho que integra a logo. No modo Imagens e voz, as ações mantêm os mesmos significados (verde = falar, azul = procurar, âmbar = ouvir, terracota = parar), agora em tons que combinam; os cartões de atividade e o menu deixaram de ter uma cor cada. Detalhes em `GUIA_PERSONALIZACAO.md`, seção 7.

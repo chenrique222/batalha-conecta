@@ -175,3 +175,6 @@ html[data-modo=icones] .moderacao :is(h1,h2,p,span,strong,label){position:static
 .moderacao-capas .botao{margin:0;min-height:44px;padding:9px 14px}
 .moderacao-arquivo{display:grid;gap:6px;font-size:14px;font-weight:600;margin:0}
 .moderacao-arquivo input{position:static;opacity:1;width:100%;height:auto;font-size:13px;margin:0}
+/* Contatos de perfis de exemplo: aparecem, mas não funcionam. */
+.telefone-exemplo{margin:0 0 4px;font-size:20px;font-weight:700;letter-spacing:.02em;color:var(--texto)}
+.botao.desligado{opacity:.55;cursor:not-allowed;filter:saturate(.6)}

@@ -15,11 +15,24 @@ CATEGORIAS = [
     {"id": "servicos", "nome": "Outros serviços", "exemplo": "Atividades que não se encaixam nas outras categorias", "imagem": "outros-servicos-ia.png", "imagem_ia": True},
 ]
 
+# Perfis fictícios para demonstração (nome, categoria, descrição, comunidade, telefone fictício).
+# Os telefones seguem o padrão (86) 90000-01xx e os botões de contato ficam desligados nos exemplos,
+# para ninguém ligar por engano para um número que possa existir.
+# A ordem só pode crescer no final: o envio_id de cada exemplo depende da posição.
 EXEMPLOS = [
-    ("Artes da Rosa", "artesanato", "Faço cestas e peças de artesanato por encomenda. Conte sua ideia e combinamos os detalhes.", "Centro"),
-    ("Farinha do Seu João", "alimentacao", "Produzo farinha de mandioca. Entre em contato para combinar quantidade e retirada.", "Comunidade rural"),
-    ("Seu Antônio · Pedreiro", "manutencao", "Faço reformas e pequenos reparos. Podemos conversar sobre o serviço antes de combinar o valor.", "Batalha"),
-    ("Bolos da Maria", "alimentacao", "Faço bolos caseiros por encomenda. Consulte sabores e disponibilidade para a sua data.", "Centro"),
+    ("Artes da Rosa", "artesanato", "Faço cestas e peças de artesanato por encomenda. Conte sua ideia e combinamos os detalhes.", "Centro", "86900000101"),
+    ("Farinha do Seu João", "alimentacao", "Produzo farinha de mandioca. Entre em contato para combinar quantidade e retirada.", "Comunidade rural", "86900000102"),
+    ("Seu Antônio · Pedreiro", "manutencao", "Faço reformas e pequenos reparos. Podemos conversar sobre o serviço antes de combinar o valor.", "Batalha", "86900000103"),
+    ("Bolos da Maria", "alimentacao", "Faço bolos caseiros por encomenda. Consulte sabores e disponibilidade para a sua data.", "Centro", "86900000104"),
+    ("Doces e Bolos da Tia Lúcia", "alimentacao", "Bolos de aniversário confeitados, bolos de pote e docinhos para festas. Encomendas com três dias de antecedência.", "Bairro Novo", "86900000105"),
+    ("Salgados do Seu Raimundo", "alimentacao", "Coxinha, pastel, empada e quibe por encomenda para festas e eventos. Vendo o cento frito ou congelado.", "Centro", "86900000106"),
+    ("Cestaria da Dona Francisca", "artesanato", "Cestas, bolsas e chapéus de palha de carnaúba feitos à mão. Faço sob encomenda e vendo na feira de sábado.", "Zona rural", "86900000107"),
+    ("Biscuit da Ana Clara", "artesanato", "Lembrancinhas, topos de bolo e enfeites em biscuit para aniversários, batizados e casamentos.", "Vila Nova", "86900000108"),
+    ("Ateliê da Cleide · Costura sob medida", "costura", "Vestidos de festa, fardamentos escolares e roupas sob medida. Tiro as medidas na sua casa ou no ateliê.", "Centro", "86900000109"),
+    ("Dona Graça Consertos de Roupa", "costura", "Bainhas, ajustes, troca de zíper e reforma de roupas. Serviço rápido, entrego em até dois dias.", "Bairro Novo", "86900000110"),
+    ("Zé da Elétrica · Reparos", "manutencao", "Instalação elétrica, troca de tomadas, chuveiros e disjuntores. Atendo em casa e faço orçamento sem compromisso.", "Vila Nova", "86900000111"),
+    ("Reformas do Chico Pintor", "manutencao", "Pintura de casas, massa corrida, textura e pequenos reparos em paredes e telhados.", "Batalha", "86900000112"),
+    ("Barbearia do Léo", "servicos", "Corte masculino, barba e pigmentação. Atendo com hora marcada, de segunda a sábado.", "Centro", "86900000113"),
 ]
 
 
@@ -88,9 +101,12 @@ def preparar_banco(caminho):
             for numero, exemplo in enumerate(EXEMPLOS, start=1):
                 conexao.execute("""
                     INSERT OR IGNORE INTO profissionais
-                    (nome, categoria, descricao, comunidade, demonstracao, envio_id)
-                    VALUES (?, ?, ?, ?, 1, ?)
+                    (nome, categoria, descricao, comunidade, telefone, demonstracao, envio_id)
+                    VALUES (?, ?, ?, ?, ?, 1, ?)
                 """, (*exemplo, f"exemplo-{numero}"))
+                # Exemplos criados em versões antigas, sem telefone, recebem o número fictício.
+                conexao.execute("UPDATE profissionais SET telefone = ? WHERE envio_id = ? AND demonstracao = 1 AND (telefone IS NULL OR telefone = '')",
+                                (exemplo[4], f"exemplo-{numero}"))
             # Uma atualização única mantém os mesmos IDs, contatos, fotos e avaliações.
             conexao.execute("CREATE TABLE IF NOT EXISTS migracoes (nome TEXT PRIMARY KEY)")
             if not conexao.execute("SELECT 1 FROM migracoes WHERE nome = 'categorias-v06'").fetchone():

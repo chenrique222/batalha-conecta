@@ -8,6 +8,7 @@ from pathlib import Path
 
 from PIL import Image
 from app import create_app
+from dados import EXEMPLOS
 
 
 class FluxoDoAplicativo(unittest.TestCase):
@@ -32,9 +33,23 @@ class FluxoDoAplicativo(unittest.TestCase):
         resposta = self.cliente.get("/api/profissionais?busca=joao")
         self.assertEqual([p["nome"] for p in resposta.json], ["Farinha do Seu João"])
         resposta = self.cliente.get("/api/profissionais?categoria=artesanato")
-        self.assertEqual(len(resposta.json), 1)
+        self.assertEqual(len(resposta.json), sum(1 for exemplo in EXEMPLOS if exemplo[1] == "artesanato"))
         self.assertNotIn("envio_id", resposta.json[0])
         self.assertEqual(self.cliente.get("/api/profissionais?busca=xyz-inexistente").json, [])
+
+    def test_exemplos_por_atividade_e_contato_desligado(self):
+        por_atividade = {}
+        for exemplo in EXEMPLOS:
+            por_atividade[exemplo[1]] = por_atividade.get(exemplo[1], 0) + 1
+            self.assertRegex(exemplo[4], r"^869000001\d\d$", "Telefone fictício no padrão combinado")
+        self.assertEqual(por_atividade, {"alimentacao": 4, "artesanato": 3, "costura": 2, "manutencao": 3, "servicos": 1})
+        self.assertEqual(len({exemplo[0] for exemplo in EXEMPLOS}), len(EXEMPLOS), "Nomes sem repetição")
+        barbeiro = next(p for p in self.cliente.get("/api/profissionais?busca=barbearia").json)
+        pagina = self.cliente.get(f"/profissional/{barbeiro['id']}").get_data(as_text=True)
+        self.assertIn("(86) 90000-0113", pagina)
+        self.assertNotIn("wa.me/5586900000113", pagina, "Exemplo não abre WhatsApp")
+        self.assertNotIn("tel:+5586900000113", pagina, "Exemplo não faz ligação")
+        self.assertIn("o número é fictício", pagina)
 
     def test_cadastro_persiste_e_outra_sessao_enxerga(self):
         campos = self.formulario()
@@ -57,7 +72,7 @@ class FluxoDoAplicativo(unittest.TestCase):
         resposta = self.cliente.post("/cadastro", data=campos, headers={"Accept": "application/json"})
         self.assertEqual(resposta.status_code, 400)
         self.assertGreaterEqual(len(resposta.json["erros"]), 4)
-        self.assertEqual(len(self.cliente.get("/api/profissionais").json), 4)
+        self.assertEqual(len(self.cliente.get("/api/profissionais").json), len(EXEMPLOS))
 
     def test_foto_audio_e_contato(self):
         campos = self.formulario()
@@ -91,7 +106,7 @@ class FluxoDoAplicativo(unittest.TestCase):
         resposta = self.cliente.post("/cadastro", data=campos, headers={"Accept": "application/json"})
         self.assertEqual(resposta.status_code, 400)
         self.assertEqual(list((Path(self.pasta.name) / "uploads").iterdir()), [])
-        self.assertEqual(len(self.cliente.get("/api/profissionais").json), 4)
+        self.assertEqual(len(self.cliente.get("/api/profissionais").json), len(EXEMPLOS))
 
     def test_texto_e_busca_nao_viram_codigo(self):
         campos = self.formulario()

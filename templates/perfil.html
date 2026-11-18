@@ -49,10 +49,16 @@
       <small class="nota">Leitura em voz alta pelo aplicativo.</small>
       {% endif %}
     </section>
-    <button class="botao suave apenas-icones" type="button" data-falar="{{ 'O botão verde com o símbolo do WhatsApp abre uma conversa neste número. O desenho de telefone faz uma ligação. O número foi informado no cadastro e ainda não foi verificado.' if pessoa.telefone else 'Este perfil não tem telefone cadastrado. Os perfis iniciais são exemplos para a turma.' }}" aria-label="Ouvir como entrar em contato">{{ icone('som') }}</button>
+    <button class="botao suave apenas-icones" type="button" data-falar="{{ 'Este é um perfil de exemplo. O número é fictício e os botões não ligam para ninguém.' if pessoa.demonstracao else ('O botão verde com o símbolo do WhatsApp abre uma conversa neste número. O desenho de telefone faz uma ligação. O número foi informado no cadastro e ainda não foi verificado.' if pessoa.telefone else 'Este perfil não tem telefone cadastrado.') }}" aria-label="Ouvir como entrar em contato">{{ icone('som') }}</button>
     <section class="contatos" aria-labelledby="titulo-contato">
       <h2 class="texto-ui" id="titulo-contato">Vamos conversar?</h2>
-      {% if pessoa.telefone %}
+      {% if pessoa.telefone and pessoa.demonstracao %}
+      {# Exemplo: o número é inventado. Os botões ficam desligados para ninguém ligar para um número que possa existir. #}
+      <p class="telefone-exemplo texto-ui">({{ pessoa.telefone[:2] }}) {{ pessoa.telefone[2:7] }}-{{ pessoa.telefone[7:] }}</p>
+      <span class="botao principal botao-whatsapp desligado" aria-disabled="true">{{ icone('whatsapp') }} <span class="texto-ui">Conversar no WhatsApp</span></span>
+      <span class="botao contorno desligado" aria-disabled="true">{{ icone('telefone') }} <span class="texto-ui">Fazer uma ligação</span></span>
+      <small class="nota">Perfil de exemplo: o número é fictício e os botões não ligam para ninguém.</small>
+      {% elif pessoa.telefone %}
       <a class="botao principal botao-whatsapp" href="https://wa.me/55{{ pessoa.telefone }}" target="_blank" rel="noopener noreferrer" aria-label="Conversar no WhatsApp">{{ icone('whatsapp') }} <span class="texto-ui">Conversar no WhatsApp</span></a>
       <a class="botao contorno" href="tel:+55{{ pessoa.telefone }}" aria-label="Fazer uma ligação">{{ icone('telefone') }} <span class="texto-ui">Fazer uma ligação</span></a>
       <small class="nota">O WhatsApp ou o telefone do seu aparelho será aberto.</small>
