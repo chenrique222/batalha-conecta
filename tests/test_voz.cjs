@@ -17,6 +17,9 @@ test("confere uma categoria por vez", () => {
   assert.equal(voz.categoriaFalado("faço bolos"), "alimentacao");
   assert.equal(voz.categoriaFalado("artesanato"), "artesanato");
   assert.equal(voz.categoriaFalado("farinha de mandioca"), "alimentacao", "farinha agora fica em Bolos e comidas");
+  assert.equal(voz.categoriaFalado("sou costureira"), "costura");
+  assert.equal(voz.categoriaFalado("faço conserto de roupa e bainha"), "costura");
+  assert.equal(voz.categoriaFalado("corte e costura"), "costura");
   assert.equal(voz.categoriaFalado("trabalho rural"), "");
   assert.equal(voz.categoriaFalado("sou pedreiro"), "manutencao");
   assert.equal(voz.categoriaFalado("serviços de manutenção"), "manutencao");

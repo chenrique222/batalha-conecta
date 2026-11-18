@@ -5,17 +5,18 @@
   const limpar = texto => texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
   const etapas = [
     {campo:"nome", titulo:"Como podemos chamar você?", icone:"pessoa", pergunta:"Qual é o seu nome ou o nome do seu trabalho?"},
-    {campo:"categoria", titulo:"Qual é sua atividade?", icone:"loja", pergunta:"Qual é a sua atividade? Diga: comidas, artesanato, manutenção ou outros serviços."},
+    {campo:"categoria", titulo:"Qual é sua atividade?", icone:"loja", pergunta:"Qual é a sua atividade? Diga: comidas, artesanato, costura, manutenção ou outros serviços."},
     {campo:"descricao", titulo:"Conte o que você faz", icone:"microfone", pergunta:"Conte em uma frase o que você faz. Por exemplo: faço bolos de milho por encomenda."},
     {campo:"comunidade", titulo:"Onde fica seu trabalho?", icone:"local", pergunta:"Qual é o seu bairro ou comunidade? Não precisa dizer o endereço da sua casa."},
     {campo:"telefone", titulo:"Como falar com você?", icone:"whatsapp", pergunta:"Qual é o seu WhatsApp com DDD? Fale um número de cada vez, começando pelo DDD. Se não quiser informar, diga pular."}
   ];
-  const categorias = {alimentacao:"Bolos e comidas", artesanato:"Artesanato", manutencao:"Serviços de manutenção", servicos:"Outros serviços"};
+  const categorias = {alimentacao:"Bolos e comidas", artesanato:"Artesanato", costura:"Corte e costura", manutencao:"Serviços de manutenção", servicos:"Outros serviços"};
   const palavras = {
     alimentacao:/\b(comida|comidas|alimentacao|bolo|bolos|doce|doces|refeicao|refeicoes|farinha|farinhada|mandioca|goma|tapioca|beiju)\b/,
     artesanato:/\b(artesanato|artesa|artesao|cesta|cestas|croche)\b/,
+    costura:/\b(costura|costuras|costureira|costureiras|costureiro|costurar|costuro|roupa|roupas|bainha|bainhas|modista|alfaiate|alfaiataria|confeccao|confeccoes|vestido|vestidos|farda|fardas|uniforme|uniformes)\b/,
     manutencao:/\b(manutencao|pedreiro|pedreira|reparo|reparos|reforma|reformas|pintor|pintora|pintura|eletricista|eletrica|encanador|encanadora|encanamento|construcao)\b/,
-    servicos:/\b(outros? servicos?|outra atividade|outras atividades|costura|costureira|costureiro|cabeleireiro|cabeleireira|barbeiro|manicure|entregas)\b/
+    servicos:/\b(outros? servicos?|outra atividade|outras atividades|cabeleireiro|cabeleireira|barbeiro|manicure|entregas)\b/
   };
   function categoriaFalado(texto) {
     const normal = limpar(texto);
@@ -37,7 +38,7 @@
     const valor = texto.trim();
     if (campo === "categoria") {
       const categoria = categoriaFalado(valor);
-      return categoria ? {valor:categoria} : {erro:"Não consegui escolher uma atividade. Diga apenas uma: comidas, artesanato, manutenção ou outros serviços."};
+      return categoria ? {valor:categoria} : {erro:"Não consegui escolher uma atividade. Diga apenas uma: comidas, artesanato, costura, manutenção ou outros serviços."};
     }
     if (campo === "telefone") {
       const telefone = telefoneFalado(valor);

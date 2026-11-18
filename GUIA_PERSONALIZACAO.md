@@ -65,6 +65,7 @@ Cada item da lista tem informações entre aspas. O campo `imagem` informa qual 
 | --- | --- |
 | Bolos e comidas | `alimentacao-ia.png` |
 | Artesanato | `artesanato-ia.png` |
+| Corte e costura | `costura.png` (ilustração do projeto; original em `costura.svg`) |
 | Serviços de manutenção | `manutencao-ia.png` |
 | Outros serviços | `outros-servicos-ia.png` |
 
@@ -170,6 +171,6 @@ No alto de cada página, um único interruptor alterna os modos. Com a bolinha �
 
 Para alterar as cores do modo de imagens, abra `static/visual-acessivel.css` e edite as variáveis no início. As regras começam com `html[data-modo="icones"]` para afetar somente esse modo. O valor interno continua sendo `icones` para reconhecer a preferência já salva de versões anteriores.
 
-As quatro categorias usam imagens geradas por IA como exemplos fictícios. O pedreiro representa **Serviços de manutenção**. A barbearia ilustra uma possibilidade de **Outros serviços**, que acolhe atividades fora das demais categorias e não se limita a cortes de cabelo. O áudio explica essa abrangência. Observe com os participantes se isso fica claro. A origem das imagens está em `ORIGEM_IMAGENS_V06.md`.
+As cinco categorias usam imagens geradas por IA como exemplos fictícios. O pedreiro representa **Serviços de manutenção**. A barbearia ilustra uma possibilidade de **Outros serviços**, que acolhe atividades fora das demais categorias e não se limita a cortes de cabelo. O áudio explica essa abrangência. Observe com os participantes se isso fica claro. A origem das imagens está em `ORIGEM_IMAGENS_V06.md`.
 
 O símbolo do WhatsApp fica no trecho `<symbol id="whatsapp">` de `static/icons.svg`. O botão de contato está em `templates/perfil.html`, na classe `botao-whatsapp`. Ele abre o WhatsApp com o número informado; não envia mensagens automaticamente.

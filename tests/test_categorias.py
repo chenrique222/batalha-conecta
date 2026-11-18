@@ -34,7 +34,7 @@ class Categorias(unittest.TestCase):
             self.assertEqual(categorias['plantio'], 'servicos')
             self.assertEqual(categorias['farinha'], 'alimentacao')
             self.assertEqual(c.execute("SELECT COUNT(*) FROM profissionais WHERE categoria='rural'").fetchone()[0], 0)
-            self.assertEqual(categorias['costura'], 'servicos')
+            self.assertEqual(categorias['costura'], 'servicos')  # quem já existia não muda sozinho de atividade
             self.assertEqual(c.execute("SELECT arquivo FROM fotos WHERE profissional_id=?", (identificador,)).fetchone()[0], 'foto.webp')
             self.assertEqual(c.execute("SELECT audio FROM avaliacoes WHERE profissional_id=?", (identificador,)).fetchone()[0], 'avaliacao.ogg')
             with c:
@@ -48,7 +48,8 @@ class Categorias(unittest.TestCase):
 
     def test_categorias_distintas_e_imagens_presentes(self):
         raiz = Path(__file__).resolve().parents[1]
-        self.assertEqual(len({c['id'] for c in CATEGORIAS}), 4)
+        self.assertEqual(len({c['id'] for c in CATEGORIAS}), 5)
+        self.assertIn('costura', {c['id'] for c in CATEGORIAS})
         self.assertNotIn('rural', {c['id'] for c in CATEGORIAS})
         for categoria in CATEGORIAS:
             self.assertTrue((raiz/'static/artes'/categoria['imagem']).is_file(), categoria['imagem'])

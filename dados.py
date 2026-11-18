@@ -10,6 +10,7 @@ import re
 CATEGORIAS = [
     {"id": "alimentacao", "nome": "Bolos e comidas", "exemplo": "Bolos, doces, refeições, farinha e goma", "imagem": "alimentacao-ia.png", "imagem_ia": True},
     {"id": "artesanato", "nome": "Artesanato", "exemplo": "Peças feitas à mão", "imagem": "artesanato-ia.png", "imagem_ia": True},
+    {"id": "costura", "nome": "Corte e costura", "exemplo": "Roupas sob medida, consertos, ajustes e bainhas", "imagem": "costura.png", "imagem_ia": False},
     {"id": "manutencao", "nome": "Serviços de manutenção", "exemplo": "Pedreiro, pintura, elétrica e encanamento", "imagem": "manutencao-ia.png", "imagem_ia": True},
     {"id": "servicos", "nome": "Outros serviços", "exemplo": "Atividades que não se encaixam nas outras categorias", "imagem": "outros-servicos-ia.png", "imagem_ia": True},
 ]

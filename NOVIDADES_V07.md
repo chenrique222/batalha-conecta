@@ -43,7 +43,9 @@ Sem o assistente de IA (reconhecimento do navegador, que erra mais), a confirma�
 
 ## Atividades
 
-A atividade **Farinha e derivados** foi retirada. Agora são quatro: Bolos e comidas, Artesanato, Serviços de manutenção e Outros serviços. Quem estava cadastrado em Farinha e derivados passa automaticamente para **Bolos e comidas**, que agora cita "farinha e goma" na explicação; nenhum perfil, foto ou avaliação se perde. No cadastro falado, dizer "farinha", "goma", "tapioca" ou "beiju" escolhe Bolos e comidas.
+A atividade **Farinha e derivados** foi retirada e entrou **Corte e costura**, para as costureiras da cidade. Agora são cinco: Bolos e comidas, Artesanato, Corte e costura, Serviços de manutenção e Outros serviços. Quem estava cadastrado em Farinha e derivados passa automaticamente para **Bolos e comidas**, que agora cita "farinha e goma" na explicação; nenhum perfil, foto ou avaliação se perde. No cadastro falado, dizer "farinha", "goma", "tapioca" ou "beiju" escolhe Bolos e comidas, e "costureira", "costura", "roupa" ou "bainha" escolhe Corte e costura.
+
+A imagem de Corte e costura (`static/artes/costura.png`) é uma **ilustração** feita para o projeto (máquina de costura, tecido, linhas, tesoura e fita métrica), não uma foto. O desenho original está em `costura.svg`, nas cores do site. Pode ser trocada por uma foto de uma costureira de Batalha, com autorização dela (veja `GUIA_PERSONALIZACAO.md`). Quem já estava cadastrado como costureira em Outros serviços continua lá; para mudar, basta fazer um novo cadastro.
 
 ## Cores
 
