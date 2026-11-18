@@ -14,6 +14,8 @@
 {% macro foto_profissional(pessoa, categorias_por_id) -%}
 {% if pessoa.foto %}
 <img class="foto-profissional" src="{{ url_for('upload', nome=pessoa.foto) }}" alt="Trabalho apresentado por {{ pessoa.nome }}" loading="lazy">
+{% elif pessoa.demonstracao and pessoa.envio_id in imagens_exemplo %}
+<img class="foto-profissional ilustracao" src="{{ url_for('static', filename='exemplos/' + imagens_exemplo[pessoa.envio_id]) }}" alt="Ilustração do trabalho de {{ pessoa.nome }}, perfil de exemplo" loading="lazy">
 {% else %}
 <img class="foto-profissional ilustracao" src="{{ categorias_por_id[pessoa.categoria].imagem_url }}" alt="{{ 'Imagem de exemplo gerada por IA' if categorias_por_id[pessoa.categoria].imagem_ia else 'Imagem de exemplo da atividade' }}: {{ categorias_por_id[pessoa.categoria].nome }}. Não é a foto deste profissional." loading="lazy">
 {% endif %}

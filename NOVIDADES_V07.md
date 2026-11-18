@@ -53,6 +53,8 @@ Agora são 13 perfis fictícios, para o site parecer em uso: 4 em Bolos e comida
 
 Os telefones são inventados, no padrão (86) 90000-01xx. Como um número inventado pode pertencer a alguém de verdade, nos exemplos o número aparece na tela, mas os botões de WhatsApp e de ligação ficam desligados, com um aviso. Os perfis de exemplo continuam com a marca "Perfil fictício para demonstração".
 
+Cada perfil de exemplo tem a sua **ilustração própria** (bolo de aniversário, salgados, cestas de palha, biscuit, manequim, ferro de passar, lâmpada, rolo de pintura, barbearia e outras), em `static/exemplos/`. São desenhos feitos para o projeto, não fotos nem imagens de IA. O programa `ferramentas/ilustracoes_exemplos.py` gera todas de novo; para mudar uma cena, edite a função com o nome do perfil e execute `python ferramentas/ilustracoes_exemplos.py static/exemplos` (precisa do `rsvg-convert`). Quem se cadastrar de verdade continua com a própria foto ou com a capa da atividade.
+
 ## Cores
 
 A paleta foi refeita a partir da logo: azul-marinho e verde, com âmbar para "ouvir" e terracota para "parar". O cabeçalho virou uma faixa azul-marinho que integra a logo. No modo Imagens e voz, as ações mantêm os mesmos significados (verde = falar, azul = procurar, âmbar = ouvir, terracota = parar), agora em tons que combinam; os cartões de atividade e o menu deixaram de ter uma cor cada. Detalhes em `GUIA_PERSONALIZACAO.md`, seção 7.

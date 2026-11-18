@@ -50,6 +50,16 @@ class FluxoDoAplicativo(unittest.TestCase):
         self.assertNotIn("wa.me/5586900000113", pagina, "Exemplo não abre WhatsApp")
         self.assertNotIn("tel:+5586900000113", pagina, "Exemplo não faz ligação")
         self.assertIn("o número é fictício", pagina)
+        # Cada exemplo tem a sua ilustração, diferente da capa da atividade.
+        pasta = Path(__file__).resolve().parent.parent / "static" / "exemplos"
+        imagens = [exemplo[5] for exemplo in EXEMPLOS]
+        self.assertEqual(len(set(imagens)), len(imagens))
+        for imagem in imagens:
+            self.assertTrue((pasta / imagem).is_file(), imagem)
+        self.assertIn("/static/exemplos/leo.webp", pagina)
+        self.assertIn("Ilustração de exemplo", pagina)
+        lista = self.cliente.get("/profissionais").get_data(as_text=True)
+        self.assertEqual(sum(lista.count(f"/static/exemplos/{imagem}") > 0 for imagem in imagens), len(imagens))
 
     def test_cadastro_persiste_e_outra_sessao_enxerga(self):
         campos = self.formulario()

@@ -7,7 +7,7 @@
 <article class="perfil-completo">
   <div class="perfil-visual" id="galeria">
     {{ foto_profissional(pessoa, categorias_por_id) }}
-    <span class="legenda-foto">{{ 'Foto de capa do trabalho' if pessoa.foto else ('Imagem de exemplo gerada por IA · não é a foto deste profissional' if categorias_por_id[pessoa.categoria].imagem_ia else 'Imagem de exemplo da atividade · não é a foto deste profissional') }}</span>
+    <span class="legenda-foto">{{ 'Foto de capa do trabalho' if pessoa.foto else 'Ilustração de exemplo · perfil fictício' if (pessoa.demonstracao and pessoa.envio_id in imagens_exemplo) else ('Imagem de exemplo gerada por IA · não é a foto deste profissional' if categorias_por_id[pessoa.categoria].imagem_ia else 'Imagem de exemplo da atividade · não é a foto deste profissional') }}</span>
     {% if fotos %}
     <div class="galeria-fotos" aria-label="Fotos do trabalho">
       {% for foto in fotos %}<button type="button" data-ampliar-foto="{{ url_for('upload', nome=foto.arquivo) }}" aria-label="Ampliar foto {{ loop.index }} de {{ fotos|length }}"><img src="{{ url_for('upload', nome=foto.arquivo) }}" alt="Foto {{ loop.index }} do trabalho" loading="lazy"></button>{% endfor %}

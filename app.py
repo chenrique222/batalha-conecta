@@ -18,7 +18,7 @@ from uuid import uuid4
 from flask import Flask, abort, jsonify, redirect, render_template, request, send_file, send_from_directory, session, url_for
 from PIL import Image, ImageOps, UnidentifiedImageError
 
-from dados import CATEGORIAS, buscar_envio, buscar_por_id, buscar_profissionais, cadastrar_profissional, preparar_banco
+from dados import CATEGORIAS, IMAGENS_EXEMPLO, buscar_envio, buscar_por_id, buscar_profissionais, cadastrar_profissional, preparar_banco
 from dados import buscar_fotos, atualizar_fotos, buscar_avaliacoes, cadastrar_avaliacao, buscar_avaliacao_envio
 from dados import listar_para_moderacao, listar_avaliacoes_recentes, apagar_profissional, apagar_avaliacao
 from voz import VozNatural, VozIndisponivel, VOZES
@@ -134,6 +134,8 @@ def create_app(configuracao=None):
     # Nos testes, a IA só existe se for simulada: nenhuma chave real é usada.
     app.extensions["agente_ia"] = AgenteIA(categorias=CATEGORIAS) if app.config.get("TESTING") else AgenteIA.do_ambiente(categorias=CATEGORIAS)
 
+    # Disponível também dentro das macros (componentes.html), que não recebem o contexto da página.
+    app.jinja_env.globals["imagens_exemplo"] = IMAGENS_EXEMPLO
     pasta_capas = pasta_dados / "capas"
 
     def categorias_atuais():
@@ -270,7 +272,9 @@ def create_app(configuracao=None):
         pagina = max(1, min(request.args.get("pagina", 1, type=int), 100000))
         avaliacoes = buscar_avaliacoes(caminho_banco, identificador, pagina)
         aviso_imagem = ""
-        if not pessoa["foto"]:
+        if not pessoa["foto"] and pessoa["demonstracao"] and pessoa["envio_id"] in IMAGENS_EXEMPLO:
+            aviso_imagem = "A imagem é uma ilustração de exemplo. "
+        elif not pessoa["foto"]:
             # Uma categoria desconhecida (de uma versão antiga) não derruba a página.
             atuais = categorias_atuais()
             categoria_imagem = next((item for item in atuais if item["id"] == pessoa["categoria"]), atuais[-1])
