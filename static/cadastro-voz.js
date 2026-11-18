@@ -373,7 +373,7 @@
     valores[campo] = valor;
     form.elements[campo].value = valor;
     anotado = etapa;
-    const lido = campo === "telefone" && !valor ? "Sem telefone." : `Anotei: ${logica.lerValor(campo, valor)}.`;
+    const lido = campo === "telefone" && !valor ? "Sem telefone." : `Anotei: ${logica.lerValor(campo, valor).replace(/[.!?…\s]+$/, "")}.`;
     if (corrigindoResumo || etapa === logica.etapas.length - 1) {
       fase = "revisao";
       corrigindoResumo = false;

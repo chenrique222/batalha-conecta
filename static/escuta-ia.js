@@ -13,8 +13,11 @@
         limiarMinimo:0.012, quadrosDeFala:3, aquecimento:300,
         // Com `compartilhado`, o microfone pertence à conversa inteira e não é desligado aqui.
         compartilhado:false,
-        agendar:setTimeout, cancelarTimer:clearTimeout, repetir:setInterval, cancelarRepeticao:clearInterval,
-        agora:Date.now, abrirMicrofone:EscutaIA.abrirMicrofone, criarGravador:EscutaIA.criarGravador,
+        // Envoltas em funções: chamadas como `this.opcoes.agendar(...)`, as originais dão
+        // "Illegal invocation" no Chrome, porque precisam ser chamadas a partir da janela.
+        agendar:(funcao, tempo) => setTimeout(funcao, tempo), cancelarTimer:id => clearTimeout(id),
+        repetir:(funcao, tempo) => setInterval(funcao, tempo), cancelarRepeticao:id => clearInterval(id),
+        agora:() => Date.now(), abrirMicrofone:EscutaIA.abrirMicrofone, criarGravador:EscutaIA.criarGravador,
         criarMedidor:EscutaIA.criarMedidor, ...opcoes};
       this.anterior = opcoes.rascunho || "";
       this.encerrada = false;

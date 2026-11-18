@@ -168,3 +168,22 @@ test("microfone da conversa (compartilhado) não é desligado entre as respostas
   assert.equal(a.faixasParadas, 0, "quem solta o microfone é a conversa, ao pausar ou terminar");
   assert.equal(a.medidorFechado, true);
 });
+test("relógios padrão funcionam no navegador (sem 'Illegal invocation')", () => {
+  // No Chrome, setTimeout e parecidas falham se chamadas a partir de outro objeto.
+  const originais = {setTimeout, clearTimeout, setInterval, clearInterval};
+  const exigente = original => function (...args) {
+    if (this !== undefined && this !== globalThis) throw new TypeError("Illegal invocation");
+    return original(...args);
+  };
+  for (const nome of Object.keys(originais)) globalThis[nome] = exigente(originais[nome]);
+  try {
+    const escuta = new EscutaIA({transcrever: async () => "", onFinal() {}, onErro() {}});
+    const id = escuta.agendar(() => {}, 10);
+    escuta.remover(id);
+    const repeticao = escuta.opcoes.repetir(() => {}, 10);
+    escuta.opcoes.cancelarRepeticao(repeticao);
+    assert.equal(typeof escuta.opcoes.agora(), "number");
+  } finally {
+    Object.assign(globalThis, originais);
+  }
+});

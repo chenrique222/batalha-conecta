@@ -5,7 +5,8 @@
   class EscutaPaciente {
     constructor(opcoes) {
       this.opcoes = {esperaInicial:30000, pausa:6000, duracaoMaxima:120000,
-        agendar:setTimeout, cancelarTimer:clearTimeout, agora:Date.now, ...opcoes};
+        // Envoltas em funções: chamadas a partir de outro objeto, as originais dão "Illegal invocation" no Chrome.
+        agendar:(funcao, tempo) => setTimeout(funcao, tempo), cancelarTimer:id => clearTimeout(id), agora:() => Date.now(), ...opcoes};
       this.rec = null;
       this.encerrada = false;
       this.timers = new Set();
